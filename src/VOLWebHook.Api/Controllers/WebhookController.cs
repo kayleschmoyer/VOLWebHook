@@ -27,10 +27,15 @@ public class WebhookController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Receive(CancellationToken cancellationToken)
     {
+        var requestId = Guid.NewGuid().ToString("N");
+        Response.Headers["X-Request-Id"] = requestId;
+
         try
         {
             var rawBody = HttpContext.Items["RawRequestBody"] as string ?? string.Empty;
             var webhookRequest = await _processingService.ProcessAsync(HttpContext, rawBody, cancellationToken);
+
+            Response.Headers["X-Request-Id"] = webhookRequest.Id;
 
             return Ok(new WebhookResponse
             {
@@ -40,11 +45,11 @@ public class WebhookController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception processing webhook");
+            _logger.LogError(ex, "Unhandled exception processing webhook. RequestId: {RequestId}", requestId);
 
             if (_settings.AlwaysReturn200)
             {
-                return Ok(new { status = "error" });
+                return Ok(new { status = "error", requestId });
             }
 
             return StatusCode(StatusCodes.Status500InternalServerError);
