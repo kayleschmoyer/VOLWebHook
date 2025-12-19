@@ -6,12 +6,13 @@ using VOLWebHook.Api.Models;
 
 namespace VOLWebHook.Api.Services;
 
-public sealed class FileWebhookPersistenceService : IWebhookPersistenceService
+public sealed class FileWebhookPersistenceService : IWebhookPersistenceService, IDisposable
 {
     private readonly WebhookSettings _settings;
     private readonly ILogger<FileWebhookPersistenceService> _logger;
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly SemaphoreSlim _writeLock = new(1, 1);
+    private bool _disposed;
 
     public FileWebhookPersistenceService(
         IOptions<WebhookSettings> settings,
@@ -67,6 +68,9 @@ public sealed class FileWebhookPersistenceService : IWebhookPersistenceService
 
     public async Task<WebhookRequest?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
+        if (!Directory.Exists(_settings.PayloadStoragePath))
+            return null;
+
         var directories = Directory.GetDirectories(_settings.PayloadStoragePath);
 
         foreach (var directory in directories.OrderByDescending(d => d))
@@ -160,5 +164,14 @@ public sealed class FileWebhookPersistenceService : IWebhookPersistenceService
             Directory.CreateDirectory(_settings.PayloadStoragePath);
             _logger.LogInformation("Created webhook storage directory at {Path}", _settings.PayloadStoragePath);
         }
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        _writeLock.Dispose();
+        _disposed = true;
     }
 }

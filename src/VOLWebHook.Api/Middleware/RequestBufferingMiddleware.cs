@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.Extensions.Options;
 using VOLWebHook.Api.Configuration;
 
@@ -35,13 +36,19 @@ public sealed class RequestBufferingMiddleware
         context.Request.EnableBuffering();
 
         // Read the body to check actual size (for chunked transfers)
-        var body = await new StreamReader(context.Request.Body).ReadToEndAsync();
+        string body;
+        using (var reader = new StreamReader(context.Request.Body, Encoding.UTF8, leaveOpen: true))
+        {
+            body = await reader.ReadToEndAsync();
+        }
         context.Request.Body.Position = 0;
 
-        if (body.Length > _settings.MaxPayloadSizeBytes)
+        // Check byte size, not character count (important for multi-byte characters)
+        var byteSize = Encoding.UTF8.GetByteCount(body);
+        if (byteSize > _settings.MaxPayloadSizeBytes)
         {
             _logger.LogWarning("Request payload too large after reading: {Size} bytes (max: {MaxSize})",
-                body.Length, _settings.MaxPayloadSizeBytes);
+                byteSize, _settings.MaxPayloadSizeBytes);
             context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
             await context.Response.WriteAsync($"Payload too large. Maximum size: {_settings.MaxPayloadSizeBytes} bytes");
             return;

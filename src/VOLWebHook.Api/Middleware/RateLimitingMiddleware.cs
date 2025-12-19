@@ -43,7 +43,7 @@ public sealed class RateLimitingMiddleware
         var minuteCount = counter.GetMinuteCount(now);
         var hourCount = counter.GetHourCount(now);
 
-        if (minuteCount > _settings.RequestsPerMinute)
+        if (minuteCount >= _settings.RequestsPerMinute)
         {
             _logger.LogWarning("Rate limit exceeded (per minute) for client {ClientKey}: {Count}/{Limit}",
                 clientKey, minuteCount, _settings.RequestsPerMinute);
@@ -53,7 +53,7 @@ public sealed class RateLimitingMiddleware
             return;
         }
 
-        if (hourCount > _settings.RequestsPerHour)
+        if (hourCount >= _settings.RequestsPerHour)
         {
             _logger.LogWarning("Rate limit exceeded (per hour) for client {ClientKey}: {Count}/{Limit}",
                 clientKey, hourCount, _settings.RequestsPerHour);

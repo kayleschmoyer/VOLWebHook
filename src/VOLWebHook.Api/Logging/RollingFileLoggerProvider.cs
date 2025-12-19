@@ -115,7 +115,7 @@ internal sealed class RollingFileWriter : IDisposable
 
             _currentWriter.WriteLine(message);
             _currentWriter.Flush();
-            _currentFileSize += Encoding.UTF8.GetByteCount(message) + Environment.NewLine.Length;
+            _currentFileSize += Encoding.UTF8.GetByteCount(message) + Encoding.UTF8.GetByteCount(Environment.NewLine);
 
             if (_currentFileSize >= _settings.MaxFileSizeBytes)
             {
@@ -163,8 +163,14 @@ internal sealed class RollingFileWriter : IDisposable
 
         if (_currentFilePath != null && File.Exists(_currentFilePath))
         {
+            var directory = Path.GetDirectoryName(_currentFilePath);
+            if (directory == null)
+            {
+                _currentFileSize = 0;
+                return;
+            }
+
             var timestamp = DateTime.UtcNow.ToString("HHmmss");
-            var directory = Path.GetDirectoryName(_currentFilePath)!;
             var fileNameWithoutExt = Path.GetFileNameWithoutExtension(_currentFilePath);
             var extension = Path.GetExtension(_currentFilePath);
             var newPath = Path.Combine(directory, $"{fileNameWithoutExt}_{timestamp}{extension}");
