@@ -8,8 +8,4 @@
     <AssemblyName>VOLWebHook.Api</AssemblyName>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.RateLimiting" Version="8.0.0" />
-  </ItemGroup>
-
 </Project>
