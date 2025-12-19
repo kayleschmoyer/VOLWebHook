@@ -6,19 +6,17 @@ namespace VOLWebHook.Api.Logging;
 
 public sealed class RollingFileLoggerProvider : ILoggerProvider
 {
-    private readonly LoggingSettings _settings;
     private readonly ConcurrentDictionary<string, RollingFileLogger> _loggers = new();
     private readonly RollingFileWriter _fileWriter;
 
     public RollingFileLoggerProvider(LoggingSettings settings)
     {
-        _settings = settings;
         _fileWriter = new RollingFileWriter(settings);
     }
 
     public ILogger CreateLogger(string categoryName)
     {
-        return _loggers.GetOrAdd(categoryName, name => new RollingFileLogger(name, _fileWriter, _settings));
+        return _loggers.GetOrAdd(categoryName, name => new RollingFileLogger(name, _fileWriter));
     }
 
     public void Dispose()
@@ -32,13 +30,11 @@ internal sealed class RollingFileLogger : ILogger
 {
     private readonly string _categoryName;
     private readonly RollingFileWriter _fileWriter;
-    private readonly LoggingSettings _settings;
 
-    public RollingFileLogger(string categoryName, RollingFileWriter fileWriter, LoggingSettings settings)
+    public RollingFileLogger(string categoryName, RollingFileWriter fileWriter)
     {
         _categoryName = categoryName;
         _fileWriter = fileWriter;
-        _settings = settings;
     }
 
     public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;

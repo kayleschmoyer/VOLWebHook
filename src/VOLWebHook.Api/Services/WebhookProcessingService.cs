@@ -26,7 +26,7 @@ public sealed class WebhookProcessingService : IWebhookProcessingService
         var request = context.Request;
         var connection = context.Connection;
 
-        var (isValidJson, parsedJson, parseError) = TryParseJson(rawBody);
+        var (isValidJson, parseError) = ValidateJson(rawBody);
 
         var headers = new Dictionary<string, string[]>();
         foreach (var header in request.Headers)
@@ -47,16 +47,10 @@ public sealed class WebhookProcessingService : IWebhookProcessingService
             ContentLength = rawBody.Length,
             ContentType = request.ContentType,
             IsValidJson = isValidJson,
-            ParsedJson = parsedJson,
             JsonParseError = parseError
         };
 
         _logger.LogInformation("Webhook received: {LogString}", webhookRequest.ToLogString());
-
-        if (!isValidJson && !string.IsNullOrEmpty(parseError))
-        {
-            _logger.LogWarning("JSON parse error for {RequestId}: {Error}", webhookRequest.Id, parseError);
-        }
 
         try
         {
@@ -70,21 +64,19 @@ public sealed class WebhookProcessingService : IWebhookProcessingService
         return webhookRequest;
     }
 
-    private static (bool isValid, JsonElement? parsed, string? error) TryParseJson(string content)
+    private static (bool isValid, string? error) ValidateJson(string content)
     {
         if (string.IsNullOrWhiteSpace(content))
-        {
-            return (false, null, "Empty content");
-        }
+            return (false, null);
 
         try
         {
             using var document = JsonDocument.Parse(content);
-            return (true, document.RootElement.Clone(), null);
+            return (true, null);
         }
         catch (JsonException ex)
         {
-            return (false, null, ex.Message);
+            return (false, ex.Message);
         }
     }
 

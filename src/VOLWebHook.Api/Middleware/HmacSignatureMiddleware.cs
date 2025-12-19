@@ -84,16 +84,8 @@ public sealed class HmacSignatureMiddleware
 
     private static bool SecureCompare(string a, string b)
     {
-        // Use fixed-time comparison to prevent timing attacks
-        // Pad shorter string to match length (prevents length leak)
-        var maxLength = Math.Max(a.Length, b.Length);
-        var aBytes = new byte[maxLength];
-        var bBytes = new byte[maxLength];
-
-        Encoding.UTF8.GetBytes(a.PadRight(maxLength)).CopyTo(aBytes, 0);
-        Encoding.UTF8.GetBytes(b.PadRight(maxLength)).CopyTo(bBytes, 0);
-
-        // Use built-in constant-time comparison
-        return CryptographicOperations.FixedTimeEquals(aBytes, bBytes) && a.Length == b.Length;
+        var aBytes = Encoding.UTF8.GetBytes(a);
+        var bBytes = Encoding.UTF8.GetBytes(b);
+        return CryptographicOperations.FixedTimeEquals(aBytes, bBytes);
     }
 }

@@ -25,7 +25,6 @@ public class WebhookController : ControllerBase
     }
 
     [HttpPost]
-    [Consumes("application/json", "text/plain", "application/xml", "text/xml", "*/*")]
     public async Task<IActionResult> Receive(CancellationToken cancellationToken)
     {
         try
@@ -33,14 +32,11 @@ public class WebhookController : ControllerBase
             var rawBody = HttpContext.Items["RawRequestBody"] as string ?? string.Empty;
             var webhookRequest = await _processingService.ProcessAsync(HttpContext, rawBody, cancellationToken);
 
-            var response = new WebhookResponse
+            return Ok(new WebhookResponse
             {
                 RequestId = webhookRequest.Id,
-                ReceivedAtUtc = webhookRequest.ReceivedAtUtc,
-                Status = "received"
-            };
-
-            return Ok(response);
+                ReceivedAtUtc = webhookRequest.ReceivedAtUtc
+            });
         }
         catch (Exception ex)
         {
@@ -48,22 +44,10 @@ public class WebhookController : ControllerBase
 
             if (_settings.AlwaysReturn200)
             {
-                return Ok(new { status = "error", message = "Internal processing error" });
+                return Ok(new { status = "error" });
             }
 
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new { status = "error", message = "Internal server error" });
+            return StatusCode(StatusCodes.Status500InternalServerError);
         }
-    }
-
-    [HttpGet]
-    public IActionResult HealthCheck()
-    {
-        return Ok(new
-        {
-            status = "healthy",
-            timestamp = DateTime.UtcNow,
-            service = "VOLWebHook"
-        });
     }
 }

@@ -1,4 +1,3 @@
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace VOLWebHook.Api.Models;
@@ -17,7 +16,6 @@ public sealed class WebhookRequest
     public int ContentLength { get; init; }
     public string? ContentType { get; init; }
     public bool IsValidJson { get; init; }
-    public JsonElement? ParsedJson { get; init; }
     public string? JsonParseError { get; init; }
 
     [JsonIgnore]

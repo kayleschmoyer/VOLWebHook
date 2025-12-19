@@ -22,7 +22,6 @@ public sealed class FileWebhookPersistenceService : IWebhookPersistenceService, 
         _logger = logger;
         _jsonOptions = new JsonSerializerOptions
         {
-            WriteIndented = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };

@@ -63,12 +63,6 @@ public sealed class RateLimitingMiddleware
             return;
         }
 
-        // Add rate limit headers
-        context.Response.Headers.Append("X-RateLimit-Limit-Minute", _settings.RequestsPerMinute.ToString());
-        context.Response.Headers.Append("X-RateLimit-Remaining-Minute", Math.Max(0, _settings.RequestsPerMinute - minuteCount).ToString());
-        context.Response.Headers.Append("X-RateLimit-Limit-Hour", _settings.RequestsPerHour.ToString());
-        context.Response.Headers.Append("X-RateLimit-Remaining-Hour", Math.Max(0, _settings.RequestsPerHour - hourCount).ToString());
-
         await _next(context);
     }
 
