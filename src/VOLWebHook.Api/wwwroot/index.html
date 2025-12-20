@@ -1499,28 +1499,58 @@
                     </div>
 
                     <div class="config-actions">
-                        <button type="submit" class="btn btn-success" id="saveConfigBtn">
-                            &#128190; Save Configuration
+                        <span id="saveStatus" class="save-status">&#10003; Auto-save enabled</span>
+                        <button type="button" class="btn btn-secondary" onclick="resetConfiguration()">
+                            &#8635; Reset to Saved
                         </button>
-                        <button type="button" class="btn btn-secondary" onclick="loadAllData()">
-                            &#8635; Reset
-                        </button>
-                        <span id="saveStatus" class="save-status"></span>
                     </div>
                 </form>
             `;
+            // Setup auto-save after the form is rendered
+            setupAutoSave();
+        }
+
+        let autoSaveTimeout = null;
+        let lastGeneratedKey = null;
+
+        function setupAutoSave() {
+            const form = document.getElementById('configForm');
+            if (!form) return;
+
+            // Add change listeners to all inputs
+            const inputs = form.querySelectorAll('input, select, textarea');
+            inputs.forEach(input => {
+                const eventType = (input.type === 'checkbox' || input.tagName === 'SELECT') ? 'change' : 'input';
+                input.addEventListener(eventType, () => {
+                    // Don't auto-save the validKeys textarea (it's for manual key entry)
+                    if (input.id === 'cfg-validKeys') return;
+                    triggerAutoSave();
+                });
+            });
+        }
+
+        function triggerAutoSave() {
+            const saveStatus = document.getElementById('saveStatus');
+            if (saveStatus) {
+                saveStatus.className = 'save-status';
+                saveStatus.innerHTML = '&#8987; Saving...';
+            }
+
+            // Debounce: wait 500ms after last change before saving
+            if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => saveConfiguration(), 500);
+        }
+
+        async function resetConfiguration() {
+            lastGeneratedKey = null;
+            await loadAllData();
+            showToast('Configuration reset to saved values', 'info');
         }
 
         async function saveConfiguration(event) {
-            event.preventDefault();
+            if (event) event.preventDefault();
 
-            const saveBtn = document.getElementById('saveConfigBtn');
             const saveStatus = document.getElementById('saveStatus');
-
-            saveBtn.disabled = true;
-            saveBtn.innerHTML = '&#8987; Saving...';
-            saveStatus.className = 'save-status';
-            saveStatus.textContent = '';
 
             // Parse textarea values into arrays
             const parseLines = (text) => text.split('\\n').map(l => l.trim()).filter(l => l);
@@ -1583,26 +1613,16 @@
 
                 if (response.ok && result.success) {
                     saveStatus.className = 'save-status success';
-                    saveStatus.innerHTML = '&#10003; ' + result.message;
-                    showToast('Configuration saved! Changes are now active.', 'success');
-
-                    // Reload configuration to reflect changes
-                    setTimeout(async () => {
-                        const newConfig = await fetchAPI('config');
-                        if (newConfig) updateConfig(newConfig);
-                        const newStats = await fetchAPI('stats');
-                        if (newStats) updateStats(newStats);
-                    }, 500);
+                    saveStatus.innerHTML = '&#10003; Saved';
+                    // Update stats without reloading the full config (preserves generated key display)
+                    const newStats = await fetchAPI('stats');
+                    if (newStats) updateStats(newStats);
                 } else {
                     throw new Error(result.message || result.error || 'Save failed');
                 }
             } catch (error) {
                 saveStatus.className = 'save-status error';
                 saveStatus.innerHTML = '&#10007; ' + error.message;
-                showToast('Failed to save configuration: ' + error.message, 'error');
-            } finally {
-                saveBtn.disabled = false;
-                saveBtn.innerHTML = '&#128190; Save Configuration';
             }
         }
 
@@ -1724,11 +1744,17 @@
                 const result = await response.json();
 
                 if (result.success) {
+                    // Store the key so it survives config reloads
+                    lastGeneratedKey = result.apiKey;
                     keyInput.value = result.apiKey;
                     container.style.display = 'block';
-                    showToast(`API key generated! Total keys: ${result.totalKeys}`, 'success');
-                    // Refresh config to update the key count
-                    setTimeout(loadAllData, 500);
+                    showToast(`API key generated and added! Total keys: ${result.totalKeys}. Copy it now!`, 'success');
+
+                    // Update the key count hint text without replacing the whole form
+                    const keyCountHint = document.querySelector('#cfg-validKeys')?.closest('.config-item')?.querySelector('.config-hint');
+                    if (keyCountHint) {
+                        keyCountHint.textContent = `One key per line. Current keys: ${result.totalKeys}. Leave empty to keep existing keys.`;
+                    }
                 } else {
                     showToast(result.message || 'Failed to generate API key', 'error');
                 }
