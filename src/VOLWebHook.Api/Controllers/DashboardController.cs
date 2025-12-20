@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -390,6 +391,59 @@ public class DashboardController : ControllerBase
             retentionDays = days,
             message = $"Cleaned up {deletedCount} webhook(s) older than {days} days"
         });
+    }
+
+    [HttpPost("generate-api-key")]
+    public async Task<IActionResult> GenerateApiKey(CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Generate a cryptographically secure API key
+            var keyBytes = RandomNumberGenerator.GetBytes(32);
+            var apiKey = $"vwh_{Convert.ToBase64String(keyBytes).Replace("+", "").Replace("/", "").Replace("=", "")[..40]}";
+
+            // Get existing keys and add the new one
+            var currentSettings = _securitySettings.CurrentValue;
+            var existingKeys = currentSettings.ApiKey.ValidKeys.ToList();
+            existingKeys.Add(apiKey);
+
+            // Save the updated configuration
+            var updateRequest = new ConfigurationUpdateRequest
+            {
+                Security = new SecuritySettingsUpdate
+                {
+                    ApiKey = new ApiKeySettingsUpdate
+                    {
+                        ValidKeys = existingKeys
+                    }
+                }
+            };
+
+            await _configWriter.SaveConfigurationAsync(updateRequest, cancellationToken);
+
+            _logger.LogInformation("New API key generated and added to allowed list");
+
+            // Wait for config reload
+            await Task.Delay(100, cancellationToken);
+
+            return Ok(new
+            {
+                success = true,
+                apiKey,
+                message = "API key generated and added to allowed list. Copy this key now - it won't be shown again.",
+                totalKeys = existingKeys.Count
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to generate API key");
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Failed to generate API key",
+                error = ex.Message
+            });
+        }
     }
 
     private static int CountActiveSecurityFeatures(SecuritySettings settings)
