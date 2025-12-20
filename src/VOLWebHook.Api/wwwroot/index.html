@@ -540,11 +540,127 @@
         .config-item-info h4 {
             font-weight: 600;
             margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .config-item-info p {
             font-size: 0.85rem;
             color: var(--text-muted);
+        }
+
+        /* Tooltip Styles */
+        .tooltip-trigger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            font-size: 0.7rem;
+            font-weight: 700;
+            cursor: help;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .tooltip-trigger:hover {
+            background: var(--accent-hover);
+        }
+
+        .tooltip-trigger .tooltip-content {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            left: 50%;
+            bottom: calc(100% + 10px);
+            transform: translateX(-50%);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            width: 320px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+            transition: opacity 0.2s, visibility 0.2s;
+            text-align: left;
+            font-weight: 400;
+        }
+
+        .tooltip-trigger:hover .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .tooltip-trigger .tooltip-content::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 8px solid transparent;
+            border-top-color: var(--border);
+        }
+
+        .tooltip-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tooltip-title span {
+            font-size: 1rem;
+        }
+
+        .tooltip-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 0.75rem;
+        }
+
+        .tooltip-example {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 0.75rem;
+            border-left: 3px solid var(--accent);
+        }
+
+        .tooltip-example-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.35rem;
+        }
+
+        .tooltip-example-text {
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            line-height: 1.4;
+        }
+
+        /* Responsive tooltip positioning */
+        @media (max-width: 768px) {
+            .tooltip-trigger .tooltip-content {
+                width: 260px;
+                left: auto;
+                right: -10px;
+                transform: none;
+            }
+            .tooltip-trigger .tooltip-content::after {
+                left: auto;
+                right: 15px;
+                transform: none;
+            }
         }
 
         /* Modal */
@@ -1237,48 +1353,78 @@
             `).join('');
         }
 
+        // Tooltip helper function
+        function tooltip(title, desc, example) {
+            return \`<span class="tooltip-trigger">?
+                <div class="tooltip-content">
+                    <div class="tooltip-title"><span>&#128161;</span> \${title}</div>
+                    <div class="tooltip-desc">\${desc}</div>
+                    <div class="tooltip-example">
+                        <div class="tooltip-example-label">Real Example</div>
+                        <div class="tooltip-example-text">\${example}</div>
+                    </div>
+                </div>
+            </span>\`;
+        }
+
         function updateConfig(data) {
             config = data;
-            document.getElementById('configContent').innerHTML = `
+            document.getElementById('configContent').innerHTML = \`
                 <form id="configForm" onsubmit="saveConfiguration(event)">
                     <div class="config-section">
                         <h3 class="config-section-title">&#128229; Webhook Settings</h3>
                         <div class="config-group">
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Max Payload Size (MB)</h4>
+                                    <h4>Max Payload Size (MB) \${tooltip(
+                                        'Maximum Data Size',
+                                        'The biggest chunk of data someone can send in a single webhook. Think of it like a mailbox - if the package is too big, it won\\'t fit.',
+                                        'If set to 10 MB, someone trying to send a 15 MB file will be rejected. A typical JSON webhook from Stripe or GitHub is usually less than 1 MB.'
+                                    )}</h4>
                                     <p>Maximum allowed request body size</p>
                                 </div>
                                 <input type="number" class="form-input" id="cfg-maxPayloadSizeMB"
-                                    value="${data.webhook.maxPayloadSizeMB}" min="1" max="100">
+                                    value="\${data.webhook.maxPayloadSizeMB}" min="1" max="100">
                             </div>
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Storage Persistence</h4>
+                                    <h4>Storage Persistence \${tooltip(
+                                        'Save Data to Disk',
+                                        'When ON, webhooks are saved to your hard drive and survive server restarts. When OFF, all webhooks disappear when the server stops.',
+                                        'If your server crashes at 3am and this is ON, you won\\'t lose any webhook data. If it\\'s OFF, everything received before the crash is gone.'
+                                    )}</h4>
                                     <p>Save webhooks to disk</p>
                                 </div>
                                 <label class="toggle">
                                     <input type="checkbox" id="cfg-enablePayloadPersistence"
-                                        ${data.webhook.enablePayloadPersistence ? 'checked' : ''}>
+                                        \${data.webhook.enablePayloadPersistence ? 'checked' : ''}>
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Retention Period (days)</h4>
+                                    <h4>Retention Period (days) \${tooltip(
+                                        'Auto-Delete Old Data',
+                                        'How many days to keep webhooks before automatically deleting them. Like setting an expiration date on saved emails to free up space.',
+                                        'Set to 30 days means: A webhook received today will be automatically deleted 30 days from now. Good for keeping your storage under control.'
+                                    )}</h4>
                                     <p>How long to keep webhook data</p>
                                 </div>
                                 <input type="number" class="form-input" id="cfg-payloadRetentionDays"
-                                    value="${data.webhook.payloadRetentionDays}" min="1" max="365">
+                                    value="\${data.webhook.payloadRetentionDays}" min="1" max="365">
                             </div>
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Always Return 200</h4>
+                                    <h4>Always Return 200 \${tooltip(
+                                        'Always Say Success',
+                                        'When ON, always tells senders "success" even if something went wrong internally. Prevents external services from retrying endlessly.',
+                                        'PayPal sends you a payment webhook. If there\\'s an internal error and you return "failed," PayPal will keep retrying for hours. With this ON, PayPal thinks it worked and moves on.'
+                                    )}</h4>
                                     <p>Return success even on errors</p>
                                 </div>
                                 <label class="toggle">
                                     <input type="checkbox" id="cfg-alwaysReturn200"
-                                        ${data.webhook.alwaysReturn200 ? 'checked' : ''}>
+                                        \${data.webhook.alwaysReturn200 ? 'checked' : ''}>
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
@@ -1286,43 +1432,59 @@
                     </div>
 
                     <div class="config-section">
-                        <h3 class="config-section-title">&#128274; Security Settings</h3>
+                        <h3 class="config-section-title">&#128274; Security - IP Allowlist</h3>
                         <div class="config-group">
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>IP Allowlist</h4>
+                                    <h4>Enable IP Allowlist \${tooltip(
+                                        'Guest List for Computers',
+                                        'Only allow specific computer addresses (IPs) to send webhooks. Like a VIP list at a club - if you\\'re not on the list, you can\\'t get in.',
+                                        'Turn this ON and add "52.31.14.0" to allow only GitHub\\'s servers. Random hackers trying to send fake webhooks from other IPs will be blocked.'
+                                    )}</h4>
                                     <p>Restrict access by IP address</p>
                                 </div>
                                 <label class="toggle">
                                     <input type="checkbox" id="cfg-ipAllowlistEnabled"
-                                        ${data.security.ipAllowlist.enabled ? 'checked' : ''}>
+                                        \${data.security.ipAllowlist.enabled ? 'checked' : ''}>
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
                             <div class="config-item" style="flex-direction: column; align-items: stretch; gap: 0.5rem;">
                                 <div class="config-item-info">
-                                    <h4>Allowed IPs</h4>
+                                    <h4>Allowed IPs \${tooltip(
+                                        'Specific Allowed Addresses',
+                                        'A list of exact computer addresses that can send webhooks. Each IP is like a specific house address.',
+                                        'Add "192.168.1.50" to allow only your office computer. Add "140.82.112.1" to allow a specific GitHub server. One address per line.'
+                                    )}</h4>
                                     <p class="config-hint">One IP per line (e.g., 192.168.1.100)</p>
                                 </div>
                                 <textarea class="form-textarea" id="cfg-allowedIps" rows="2"
-                                    placeholder="Enter IPs, one per line">${(data.security.ipAllowlist.allowedIps || []).join('\\n')}</textarea>
+                                    placeholder="Enter IPs, one per line">\${(data.security.ipAllowlist.allowedIps || []).join('\\n')}</textarea>
                             </div>
                             <div class="config-item" style="flex-direction: column; align-items: stretch; gap: 0.5rem;">
                                 <div class="config-item-info">
-                                    <h4>Allowed CIDRs</h4>
+                                    <h4>Allowed CIDRs \${tooltip(
+                                        'Allowed Address Ranges',
+                                        'Instead of listing every single IP, you can allow a whole range. It\\'s like saying "everyone from this neighborhood" instead of listing every house.',
+                                        '192.168.1.0/24 = all addresses from 192.168.1.0 to 192.168.1.255 (your whole office network). 10.0.0.0/8 = all addresses starting with 10 (common for internal networks).'
+                                    )}</h4>
                                     <p class="config-hint">One CIDR per line (e.g., 10.0.0.0/8)</p>
                                 </div>
                                 <textarea class="form-textarea" id="cfg-allowedCidrs" rows="2"
-                                    placeholder="Enter CIDRs, one per line">${(data.security.ipAllowlist.allowedCidrs || []).join('\\n')}</textarea>
+                                    placeholder="Enter CIDRs, one per line">\${(data.security.ipAllowlist.allowedCidrs || []).join('\\n')}</textarea>
                             </div>
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Allow Private Networks</h4>
+                                    <h4>Allow Private Networks \${tooltip(
+                                        'Allow Local/Internal Access',
+                                        'Private networks are internal addresses like your home WiFi or office LAN. They\\'re not accessible from the internet.',
+                                        'ON = Computers on your local network (192.168.x.x, 10.x.x.x) can send webhooks. OFF = Only public internet addresses work. Keep ON for testing, consider OFF for production.'
+                                    )}</h4>
                                     <p>Allow requests from private IP ranges</p>
                                 </div>
                                 <label class="toggle">
                                     <input type="checkbox" id="cfg-allowPrivateNetworks"
-                                        ${data.security.ipAllowlist.allowPrivateNetworks ? 'checked' : ''}>
+                                        \${data.security.ipAllowlist.allowPrivateNetworks ? 'checked' : ''}>
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
@@ -1334,34 +1496,50 @@
                         <div class="config-group">
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Enable API Key Auth</h4>
+                                    <h4>Enable API Key Auth \${tooltip(
+                                        'Require a Password',
+                                        'When ON, every webhook request must include a secret password (API key). Without it, the request is rejected.',
+                                        'You give Shopify your API key "sk_abc123". Shopify includes it in every webhook it sends. Anyone without this key can\\'t send you fake orders.'
+                                    )}</h4>
                                     <p>Require API key for webhook requests</p>
                                 </div>
                                 <label class="toggle">
                                     <input type="checkbox" id="cfg-apiKeyEnabled"
-                                        ${data.security.apiKey.enabled ? 'checked' : ''}>
+                                        \${data.security.apiKey.enabled ? 'checked' : ''}>
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Header Name</h4>
+                                    <h4>Header Name \${tooltip(
+                                        'Where to Look for the Key',
+                                        'HTTP headers are like labels on an envelope. This tells the system which label to check for the API key.',
+                                        'Default "X-API-Key" means requests should include: X-API-Key: your-secret-key. Some services use "Authorization" or custom names like "X-Webhook-Token".'
+                                    )}</h4>
                                     <p>HTTP header containing the API key</p>
                                 </div>
                                 <input type="text" class="form-input wide" id="cfg-apiKeyHeaderName"
-                                    value="${data.security.apiKey.headerName}" placeholder="X-API-Key">
+                                    value="\${data.security.apiKey.headerName}" placeholder="X-API-Key">
                             </div>
                             <div class="config-item" style="flex-direction: column; align-items: stretch; gap: 0.5rem;">
                                 <div class="config-item-info">
-                                    <h4>Valid API Keys</h4>
-                                    <p class="config-hint">One key per line. Current keys: ${data.security.apiKey.keyCount}. Leave empty to keep existing keys.</p>
+                                    <h4>Valid API Keys \${tooltip(
+                                        'List of Accepted Passwords',
+                                        'All the API keys that will be accepted. You can have multiple keys for different services or team members.',
+                                        'Add "key_for_stripe" and "key_for_github" on separate lines. Now both Stripe and GitHub can send webhooks, each with their own key. If someone leaves the team, just remove their key.'
+                                    )}</h4>
+                                    <p class="config-hint">One key per line. Current keys: \${data.security.apiKey.keyCount}. Leave empty to keep existing keys.</p>
                                 </div>
                                 <textarea class="form-textarea" id="cfg-validKeys" rows="2"
                                     placeholder="Enter new API keys (one per line) to replace existing keys"></textarea>
                             </div>
                             <div class="config-item" style="flex-direction: column; align-items: stretch; gap: 0.75rem;">
                                 <div class="config-item-info">
-                                    <h4>Generate New API Key</h4>
+                                    <h4>Generate New API Key \${tooltip(
+                                        'Create a New Password',
+                                        'Generates a random, secure API key and automatically adds it to your allowed list. Much safer than making up your own password.',
+                                        'Click the button, get something like "vwh_a8f3k2m9x7...". Copy it immediately and paste it into your webhook service (Stripe, GitHub, etc). It\\'s only shown once!'
+                                    )}</h4>
                                     <p class="config-hint">Create a new secure API key and automatically add it to the allowed list.</p>
                                 </div>
                                 <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
@@ -1390,38 +1568,54 @@
                         <div class="config-group">
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Enable HMAC Verification</h4>
+                                    <h4>Enable HMAC Verification \${tooltip(
+                                        'Verify Sender Identity',
+                                        'HMAC is a cryptographic way to prove a message is genuine and hasn\\'t been tampered with. Like a wax seal on a letter that breaks if someone opens it.',
+                                        'GitHub sends a webhook about a new commit. It creates a special signature using a secret only you and GitHub know. If someone tries to fake a GitHub webhook, the signature won\\'t match.'
+                                    )}</h4>
                                     <p>Verify request signatures</p>
                                 </div>
                                 <label class="toggle">
                                     <input type="checkbox" id="cfg-hmacEnabled"
-                                        ${data.security.hmac.enabled ? 'checked' : ''}>
+                                        \${data.security.hmac.enabled ? 'checked' : ''}>
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Signature Header</h4>
+                                    <h4>Signature Header \${tooltip(
+                                        'Where to Find the Signature',
+                                        'The HTTP header name where the sender puts their cryptographic signature.',
+                                        'GitHub uses "X-Hub-Signature-256", Stripe uses "Stripe-Signature", Shopify uses "X-Shopify-Hmac-SHA256". Check your webhook provider\\'s docs for the right header name.'
+                                    )}</h4>
                                     <p>HTTP header containing the signature</p>
                                 </div>
                                 <input type="text" class="form-input wide" id="cfg-hmacHeaderName"
-                                    value="${data.security.hmac.headerName}" placeholder="X-Signature">
+                                    value="\${data.security.hmac.headerName}" placeholder="X-Signature">
                             </div>
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Algorithm</h4>
+                                    <h4>Algorithm \${tooltip(
+                                        'Encryption Strength',
+                                        'The mathematical method used to create signatures. Higher numbers = stronger security, but all three are secure for normal use.',
+                                        'SHA256 is the most common and what GitHub/Stripe use. SHA512 is strongest but rarely needed. Match whatever your webhook provider uses.'
+                                    )}</h4>
                                     <p>HMAC algorithm to use</p>
                                 </div>
                                 <select class="form-input" id="cfg-hmacAlgorithm">
-                                    <option value="HMACSHA256" ${data.security.hmac.algorithm === 'HMACSHA256' ? 'selected' : ''}>HMACSHA256</option>
-                                    <option value="HMACSHA384" ${data.security.hmac.algorithm === 'HMACSHA384' ? 'selected' : ''}>HMACSHA384</option>
-                                    <option value="HMACSHA512" ${data.security.hmac.algorithm === 'HMACSHA512' ? 'selected' : ''}>HMACSHA512</option>
+                                    <option value="HMACSHA256" \${data.security.hmac.algorithm === 'HMACSHA256' ? 'selected' : ''}>HMACSHA256</option>
+                                    <option value="HMACSHA384" \${data.security.hmac.algorithm === 'HMACSHA384' ? 'selected' : ''}>HMACSHA384</option>
+                                    <option value="HMACSHA512" \${data.security.hmac.algorithm === 'HMACSHA512' ? 'selected' : ''}>HMACSHA512</option>
                                 </select>
                             </div>
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Shared Secret</h4>
-                                    <p class="config-hint">${data.security.hmac.hasSecret ? 'Secret is configured' : 'No secret configured'}. Leave empty to keep existing.</p>
+                                    <h4>Shared Secret \${tooltip(
+                                        'The Secret Password',
+                                        'A password that both you and the sender know. The sender uses it to sign messages, and you use it to verify them. Never share this publicly!',
+                                        'You set secret to "my_super_secret_123" here AND in GitHub\\'s webhook settings. GitHub signs every webhook with this secret. If someone doesn\\'t know the secret, they can\\'t fake a valid signature.'
+                                    )}</h4>
+                                    <p class="config-hint">\${data.security.hmac.hasSecret ? 'Secret is configured' : 'No secret configured'}. Leave empty to keep existing.</p>
                                 </div>
                                 <input type="password" class="form-input wide" id="cfg-hmacSharedSecret"
                                     placeholder="Enter new secret to change">
@@ -1434,39 +1628,55 @@
                         <div class="config-group">
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Enable Rate Limiting</h4>
+                                    <h4>Enable Rate Limiting \${tooltip(
+                                        'Prevent Overload',
+                                        'Limits how many webhooks can be received in a time period. Protects your server from being overwhelmed by too many requests.',
+                                        'Without rate limiting, a buggy service might send 10,000 webhooks per second and crash your server. With it enabled, excess requests are rejected with "too many requests" error.'
+                                    )}</h4>
                                     <p>Limit requests per time period</p>
                                 </div>
                                 <label class="toggle">
                                     <input type="checkbox" id="cfg-rateLimitEnabled"
-                                        ${data.security.rateLimit.enabled ? 'checked' : ''}>
+                                        \${data.security.rateLimit.enabled ? 'checked' : ''}>
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Requests per Minute</h4>
+                                    <h4>Requests per Minute \${tooltip(
+                                        'Per-Minute Speed Limit',
+                                        'Maximum number of webhooks allowed in any 60-second window. After hitting the limit, new requests are rejected until the minute resets.',
+                                        'Set to 100: In the first 10 seconds, 100 webhooks arrive. For the next 50 seconds, all new webhooks get "429 Too Many Requests" error. Then the counter resets.'
+                                    )}</h4>
                                     <p>Maximum requests allowed per minute</p>
                                 </div>
                                 <input type="number" class="form-input" id="cfg-requestsPerMinute"
-                                    value="${data.security.rateLimit.requestsPerMinute}" min="1" max="10000">
+                                    value="\${data.security.rateLimit.requestsPerMinute}" min="1" max="10000">
                             </div>
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Requests per Hour</h4>
+                                    <h4>Requests per Hour \${tooltip(
+                                        'Per-Hour Speed Limit',
+                                        'Maximum webhooks allowed in any 60-minute window. A higher-level limit that prevents sustained abuse over time.',
+                                        'Set to 1,000: Even if you allow 100/minute, you can\\'t receive more than 1,000 total in an hour. Prevents attackers from maxing out your minute limit 60 times.'
+                                    )}</h4>
                                     <p>Maximum requests allowed per hour</p>
                                 </div>
                                 <input type="number" class="form-input" id="cfg-requestsPerHour"
-                                    value="${data.security.rateLimit.requestsPerHour}" min="1" max="100000">
+                                    value="\${data.security.rateLimit.requestsPerHour}" min="1" max="100000">
                             </div>
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Per IP Address</h4>
+                                    <h4>Per IP Address \${tooltip(
+                                        'Individual vs. Shared Limits',
+                                        'ON = Each computer (IP) gets its own limit. OFF = All computers share one limit together.',
+                                        'With 100/min limit: If ON, Computer A can send 100 AND Computer B can send 100 (200 total). If OFF, Computer A and B share the 100 limit together.'
+                                    )}</h4>
                                     <p>Apply limits per IP (vs. globally)</p>
                                 </div>
                                 <label class="toggle">
                                     <input type="checkbox" id="cfg-perIpAddress"
-                                        ${data.security.rateLimit.perIpAddress ? 'checked' : ''}>
+                                        \${data.security.rateLimit.perIpAddress ? 'checked' : ''}>
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
@@ -1478,22 +1688,30 @@
                         <div class="config-group">
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>File Logging</h4>
+                                    <h4>File Logging \${tooltip(
+                                        'Save Activity Records',
+                                        'When ON, saves a detailed record of everything happening to a file on disk. Useful for troubleshooting problems later.',
+                                        'Something weird happened last Tuesday? Check the logs to see exactly what webhooks arrived, any errors that occurred, and when. Without logs, you\\'re flying blind.'
+                                    )}</h4>
                                     <p>Write logs to disk</p>
                                 </div>
                                 <label class="toggle">
                                     <input type="checkbox" id="cfg-loggingEnabled"
-                                        ${data.logging.enabled ? 'checked' : ''}>
+                                        \${data.logging.enabled ? 'checked' : ''}>
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
                             <div class="config-item">
                                 <div class="config-item-info">
-                                    <h4>Max Log File Size (MB)</h4>
+                                    <h4>Max Log File Size (MB) \${tooltip(
+                                        'Log File Size Limit',
+                                        'When the log file reaches this size, it\\'s saved and a new one starts. Prevents logs from filling up your entire hard drive.',
+                                        'Set to 100 MB: When app.log hits 100 MB, it becomes app.log.1 and a fresh app.log starts. Old logs are eventually deleted. Keeps your disk from filling up.'
+                                    )}</h4>
                                     <p>Rotate logs after reaching this size</p>
                                 </div>
                                 <input type="number" class="form-input" id="cfg-maxLogFileSizeMB"
-                                    value="${data.logging.maxFileSizeMB}" min="1" max="1000">
+                                    value="\${data.logging.maxFileSizeMB}" min="1" max="1000">
                             </div>
                         </div>
                     </div>
@@ -1505,7 +1723,7 @@
                         </button>
                     </div>
                 </form>
-            `;
+            \`;
             // Setup auto-save after the form is rendered
             setupAutoSave();
         }
