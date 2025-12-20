@@ -9,21 +9,32 @@ public sealed class HmacSignatureMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<HmacSignatureMiddleware> _logger;
-    private readonly HmacSettings _settings;
+    private readonly IOptionsMonitor<SecuritySettings> _securitySettings;
 
     public HmacSignatureMiddleware(
         RequestDelegate next,
-        IOptions<SecuritySettings> settings,
+        IOptionsMonitor<SecuritySettings> settings,
         ILogger<HmacSignatureMiddleware> logger)
     {
         _next = next;
         _logger = logger;
-        _settings = settings.Value.Hmac;
+        _securitySettings = settings;
+
+        // Log configuration changes
+        settings.OnChange(newSettings =>
+        {
+            var hmac = newSettings.Hmac;
+            _logger.LogInformation(
+                "HMAC configuration reloaded: Enabled={Enabled}, Algorithm={Algorithm}",
+                hmac.Enabled, hmac.Algorithm);
+        });
     }
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (!_settings.Enabled || string.IsNullOrEmpty(_settings.SharedSecret))
+        var settings = _securitySettings.CurrentValue.Hmac;
+
+        if (!settings.Enabled || string.IsNullOrEmpty(settings.SharedSecret))
         {
             await _next(context);
             return;
@@ -37,7 +48,7 @@ public sealed class HmacSignatureMiddleware
             return;
         }
 
-        var providedSignature = context.Request.Headers[_settings.HeaderName].FirstOrDefault();
+        var providedSignature = context.Request.Headers[settings.HeaderName].FirstOrDefault();
         if (string.IsNullOrEmpty(providedSignature))
         {
             _logger.LogWarning("Missing HMAC signature in request from {IpAddress}",
@@ -52,7 +63,7 @@ public sealed class HmacSignatureMiddleware
         var body = await reader.ReadToEndAsync();
         context.Request.Body.Position = 0;
 
-        var computedSignature = ComputeSignature(body);
+        var computedSignature = ComputeSignature(body, settings);
         if (!SecureCompare(providedSignature, computedSignature))
         {
             _logger.LogWarning("Invalid HMAC signature in request from {IpAddress}",
@@ -65,12 +76,12 @@ public sealed class HmacSignatureMiddleware
         await _next(context);
     }
 
-    private string ComputeSignature(string payload)
+    private static string ComputeSignature(string payload, HmacSettings settings)
     {
-        var keyBytes = Encoding.UTF8.GetBytes(_settings.SharedSecret!);
+        var keyBytes = Encoding.UTF8.GetBytes(settings.SharedSecret!);
         var payloadBytes = Encoding.UTF8.GetBytes(payload);
 
-        using var hmac = _settings.Algorithm.ToUpperInvariant() switch
+        using var hmac = settings.Algorithm.ToUpperInvariant() switch
         {
             "HMACSHA256" => (HMAC)new HMACSHA256(keyBytes),
             "HMACSHA384" => new HMACSHA384(keyBytes),

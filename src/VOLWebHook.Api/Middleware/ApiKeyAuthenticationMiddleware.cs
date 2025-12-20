@@ -9,33 +9,54 @@ public sealed class ApiKeyAuthenticationMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<ApiKeyAuthenticationMiddleware> _logger;
-    private readonly ApiKeySettings _settings;
-    private readonly HashSet<string> _validKeyHashes;
+    private readonly IOptionsMonitor<SecuritySettings> _securitySettings;
+
+    // Cache for hashed keys, updated when configuration changes
+    private volatile CachedApiKeySettings? _cachedSettings;
+    private readonly object _cacheLock = new();
 
     public ApiKeyAuthenticationMiddleware(
         RequestDelegate next,
-        IOptions<SecuritySettings> settings,
+        IOptionsMonitor<SecuritySettings> settings,
         ILogger<ApiKeyAuthenticationMiddleware> logger)
     {
         _next = next;
         _logger = logger;
-        _settings = settings.Value.ApiKey;
+        _securitySettings = settings;
 
-        // Store hashes of valid keys for secure comparison
-        _validKeyHashes = new HashSet<string>(
-            _settings.ValidKeys.Select(k => ComputeHash(k)),
-            StringComparer.Ordinal);
+        // Initialize cache
+        UpdateCache(settings.CurrentValue.ApiKey);
+
+        // Subscribe to configuration changes
+        settings.OnChange(newSettings => UpdateCache(newSettings.ApiKey));
+    }
+
+    private void UpdateCache(ApiKeySettings settings)
+    {
+        lock (_cacheLock)
+        {
+            var validKeyHashes = new HashSet<string>(
+                settings.ValidKeys.Select(ComputeHash),
+                StringComparer.Ordinal);
+
+            _cachedSettings = new CachedApiKeySettings(settings, validKeyHashes);
+
+            _logger.LogInformation(
+                "API key configuration reloaded: Enabled={Enabled}, KeyCount={KeyCount}",
+                settings.Enabled, settings.ValidKeys.Count);
+        }
     }
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (!_settings.Enabled)
+        var cached = _cachedSettings;
+        if (cached == null || !cached.Settings.Enabled)
         {
             await _next(context);
             return;
         }
 
-        var providedKey = context.Request.Headers[_settings.HeaderName].FirstOrDefault();
+        var providedKey = context.Request.Headers[cached.Settings.HeaderName].FirstOrDefault();
 
         if (string.IsNullOrEmpty(providedKey))
         {
@@ -47,7 +68,7 @@ public sealed class ApiKeyAuthenticationMiddleware
         }
 
         var providedKeyHash = ComputeHash(providedKey);
-        if (!_validKeyHashes.Contains(providedKeyHash))
+        if (!cached.ValidKeyHashes.Contains(providedKeyHash))
         {
             _logger.LogWarning("Invalid API key in request from {IpAddress}",
                 context.Connection.RemoteIpAddress);
@@ -63,5 +84,17 @@ public sealed class ApiKeyAuthenticationMiddleware
     {
         var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
         return Convert.ToHexString(bytes);
+    }
+
+    private sealed class CachedApiKeySettings
+    {
+        public ApiKeySettings Settings { get; }
+        public HashSet<string> ValidKeyHashes { get; }
+
+        public CachedApiKeySettings(ApiKeySettings settings, HashSet<string> validKeyHashes)
+        {
+            Settings = settings;
+            ValidKeyHashes = validKeyHashes;
+        }
     }
 }

@@ -8,25 +8,47 @@ public sealed class IpAllowlistMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<IpAllowlistMiddleware> _logger;
-    private readonly IpAllowlistSettings _settings;
-    private readonly HashSet<string> _allowedIps;
-    private readonly List<(IPAddress Network, int PrefixLength)> _allowedCidrs;
+    private readonly IOptionsMonitor<SecuritySettings> _securitySettings;
+
+    // Cache for parsed settings, updated when configuration changes
+    private volatile CachedIpAllowlistSettings? _cachedSettings;
+    private readonly object _cacheLock = new();
 
     public IpAllowlistMiddleware(
         RequestDelegate next,
-        IOptions<SecuritySettings> settings,
+        IOptionsMonitor<SecuritySettings> settings,
         ILogger<IpAllowlistMiddleware> logger)
     {
         _next = next;
         _logger = logger;
-        _settings = settings.Value.IpAllowlist;
-        _allowedIps = new HashSet<string>(_settings.AllowedIps, StringComparer.OrdinalIgnoreCase);
-        _allowedCidrs = ParseCidrs(_settings.AllowedCidrs);
+        _securitySettings = settings;
+
+        // Initialize cache
+        UpdateCache(settings.CurrentValue.IpAllowlist);
+
+        // Subscribe to configuration changes
+        settings.OnChange(newSettings => UpdateCache(newSettings.IpAllowlist));
+    }
+
+    private void UpdateCache(IpAllowlistSettings settings)
+    {
+        lock (_cacheLock)
+        {
+            _cachedSettings = new CachedIpAllowlistSettings(
+                settings,
+                new HashSet<string>(settings.AllowedIps, StringComparer.OrdinalIgnoreCase),
+                ParseCidrs(settings.AllowedCidrs));
+
+            _logger.LogInformation(
+                "IP allowlist configuration reloaded: Enabled={Enabled}, IPs={IpCount}, CIDRs={CidrCount}",
+                settings.Enabled, settings.AllowedIps.Count, settings.AllowedCidrs.Count);
+        }
     }
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (!_settings.Enabled)
+        var cached = _cachedSettings;
+        if (cached == null || !cached.Settings.Enabled)
         {
             await _next(context);
             return;
@@ -41,7 +63,7 @@ public sealed class IpAllowlistMiddleware
             return;
         }
 
-        if (IsIpAllowed(remoteIp))
+        if (IsIpAllowed(remoteIp, cached))
         {
             await _next(context);
             return;
@@ -52,16 +74,16 @@ public sealed class IpAllowlistMiddleware
         await context.Response.WriteAsync("Forbidden");
     }
 
-    private bool IsIpAllowed(IPAddress ip)
+    private static bool IsIpAllowed(IPAddress ip, CachedIpAllowlistSettings cached)
     {
         // Check explicit IP list
-        if (_allowedIps.Contains(ip.ToString()))
+        if (cached.AllowedIps.Contains(ip.ToString()))
         {
             return true;
         }
 
         // Check CIDR ranges
-        foreach (var (network, prefixLength) in _allowedCidrs)
+        foreach (var (network, prefixLength) in cached.AllowedCidrs)
         {
             if (IsInRange(ip, network, prefixLength))
             {
@@ -70,7 +92,7 @@ public sealed class IpAllowlistMiddleware
         }
 
         // Check private networks if allowed
-        if (_settings.AllowPrivateNetworks && IsPrivateNetwork(ip))
+        if (cached.Settings.AllowPrivateNetworks && IsPrivateNetwork(ip))
         {
             return true;
         }
@@ -170,5 +192,22 @@ public sealed class IpAllowlistMiddleware
         }
 
         return result;
+    }
+
+    private sealed class CachedIpAllowlistSettings
+    {
+        public IpAllowlistSettings Settings { get; }
+        public HashSet<string> AllowedIps { get; }
+        public List<(IPAddress Network, int PrefixLength)> AllowedCidrs { get; }
+
+        public CachedIpAllowlistSettings(
+            IpAllowlistSettings settings,
+            HashSet<string> allowedIps,
+            List<(IPAddress Network, int PrefixLength)> allowedCidrs)
+        {
+            Settings = settings;
+            AllowedIps = allowedIps;
+            AllowedCidrs = allowedCidrs;
+        }
     }
 }

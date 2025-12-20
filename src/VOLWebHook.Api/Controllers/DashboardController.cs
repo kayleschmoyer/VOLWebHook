@@ -15,6 +15,7 @@ public class DashboardController : ControllerBase
     private readonly IOptionsMonitor<WebhookSettings> _webhookSettings;
     private readonly IOptionsMonitor<SecuritySettings> _securitySettings;
     private readonly IOptionsMonitor<LoggingSettings> _loggingSettings;
+    private readonly IConfigurationWriterService _configWriter;
     private readonly IConfiguration _configuration;
     private readonly ILogger<DashboardController> _logger;
 
@@ -23,6 +24,7 @@ public class DashboardController : ControllerBase
         IOptionsMonitor<WebhookSettings> webhookSettings,
         IOptionsMonitor<SecuritySettings> securitySettings,
         IOptionsMonitor<LoggingSettings> loggingSettings,
+        IConfigurationWriterService configWriter,
         IConfiguration configuration,
         ILogger<DashboardController> logger)
     {
@@ -30,6 +32,7 @@ public class DashboardController : ControllerBase
         _webhookSettings = webhookSettings;
         _securitySettings = securitySettings;
         _loggingSettings = loggingSettings;
+        _configWriter = configWriter;
         _configuration = configuration;
         _logger = logger;
     }
@@ -252,6 +255,39 @@ public class DashboardController : ControllerBase
                 maxFileSizeMB = loggingSettings.MaxFileSizeBytes / 1024 / 1024
             }
         });
+    }
+
+    [HttpPost("config")]
+    public async Task<IActionResult> SaveConfiguration(
+        [FromBody] ConfigurationUpdateRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _configWriter.SaveConfigurationAsync(request, cancellationToken);
+
+            _logger.LogInformation("Configuration updated via dashboard");
+
+            // Return the updated configuration
+            // Give the file watcher a moment to detect the change
+            await Task.Delay(100, cancellationToken);
+
+            return Ok(new
+            {
+                success = true,
+                message = "Configuration updated successfully. Changes are now active."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save configuration");
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Failed to save configuration",
+                error = ex.Message
+            });
+        }
     }
 
     [HttpGet("endpoint-info")]
