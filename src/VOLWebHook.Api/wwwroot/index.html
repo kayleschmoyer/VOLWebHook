@@ -424,6 +424,87 @@
         .toggle input:checked + .toggle-slider { background: var(--success); }
         .toggle input:checked + .toggle-slider::before { transform: translateX(22px); }
 
+        /* Form Controls */
+        .form-input {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            min-width: 120px;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-input[type="number"] {
+            width: 100px;
+            text-align: right;
+        }
+
+        .form-input.wide {
+            width: 200px;
+        }
+
+        .form-textarea {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            font-family: 'Fira Code', 'Monaco', monospace;
+            min-height: 60px;
+            resize: vertical;
+            width: 100%;
+        }
+
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .config-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        .btn-success:hover { background: #059669; transform: translateY(-1px); }
+
+        .btn-success:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .save-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .save-status.success { color: var(--success); }
+        .save-status.error { color: var(--danger); }
+
+        .config-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
         /* Configuration Panel */
         .config-section {
             margin-bottom: 2rem;
@@ -1159,112 +1240,347 @@
         function updateConfig(data) {
             config = data;
             document.getElementById('configContent').innerHTML = `
-                <div class="config-section">
-                    <h3 class="config-section-title">&#128229; Webhook Settings</h3>
-                    <div class="config-group">
-                        <div class="config-item">
-                            <div class="config-item-info">
-                                <h4>Max Payload Size</h4>
-                                <p>Maximum allowed request body size</p>
+                <form id="configForm" onsubmit="saveConfiguration(event)">
+                    <div class="config-section">
+                        <h3 class="config-section-title">&#128229; Webhook Settings</h3>
+                        <div class="config-group">
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Max Payload Size (MB)</h4>
+                                    <p>Maximum allowed request body size</p>
+                                </div>
+                                <input type="number" class="form-input" id="cfg-maxPayloadSizeMB"
+                                    value="${data.webhook.maxPayloadSizeMB}" min="1" max="100">
                             </div>
-                            <span style="font-weight: 600; color: var(--accent)">${data.webhook.maxPayloadSizeMB} MB</span>
-                        </div>
-                        <div class="config-item">
-                            <div class="config-item-info">
-                                <h4>Storage Persistence</h4>
-                                <p>Save webhooks to disk</p>
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Storage Persistence</h4>
+                                    <p>Save webhooks to disk</p>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="cfg-enablePayloadPersistence"
+                                        ${data.webhook.enablePayloadPersistence ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
                             </div>
-                            <span style="font-weight: 600; color: ${data.webhook.enablePayloadPersistence ? 'var(--success)' : 'var(--text-muted)'}">
-                                ${data.webhook.enablePayloadPersistence ? 'Enabled' : 'Disabled'}
-                            </span>
-                        </div>
-                        <div class="config-item">
-                            <div class="config-item-info">
-                                <h4>Retention Period</h4>
-                                <p>How long to keep webhook data</p>
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Retention Period (days)</h4>
+                                    <p>How long to keep webhook data</p>
+                                </div>
+                                <input type="number" class="form-input" id="cfg-payloadRetentionDays"
+                                    value="${data.webhook.payloadRetentionDays}" min="1" max="365">
                             </div>
-                            <span style="font-weight: 600; color: var(--accent)">${data.webhook.payloadRetentionDays} days</span>
-                        </div>
-                        <div class="config-item">
-                            <div class="config-item-info">
-                                <h4>Always Return 200</h4>
-                                <p>Return success even on errors</p>
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Always Return 200</h4>
+                                    <p>Return success even on errors</p>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="cfg-alwaysReturn200"
+                                        ${data.webhook.alwaysReturn200 ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
                             </div>
-                            <span style="font-weight: 600; color: ${data.webhook.alwaysReturn200 ? 'var(--success)' : 'var(--text-muted)'}">
-                                ${data.webhook.alwaysReturn200 ? 'Enabled' : 'Disabled'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="config-section">
-                    <h3 class="config-section-title">&#128274; Security Settings</h3>
-                    <div class="config-group">
-                        <div class="config-item">
-                            <div class="config-item-info">
-                                <h4>IP Allowlist</h4>
-                                <p>Restrict access by IP address${data.security.ipAllowlist.enabled ? ` (${data.security.ipAllowlist.allowedIps.length} IPs, ${data.security.ipAllowlist.allowedCidrs.length} CIDRs)` : ''}</p>
-                            </div>
-                            <span style="font-weight: 600; color: ${data.security.ipAllowlist.enabled ? 'var(--success)' : 'var(--text-muted)'}">
-                                ${data.security.ipAllowlist.enabled ? 'Enabled' : 'Disabled'}
-                            </span>
-                        </div>
-                        <div class="config-item">
-                            <div class="config-item-info">
-                                <h4>API Key Authentication</h4>
-                                <p>Require API key in ${data.security.apiKey.headerName} header${data.security.apiKey.enabled ? ` (${data.security.apiKey.keyCount} keys)` : ''}</p>
-                            </div>
-                            <span style="font-weight: 600; color: ${data.security.apiKey.enabled ? 'var(--success)' : 'var(--text-muted)'}">
-                                ${data.security.apiKey.enabled ? 'Enabled' : 'Disabled'}
-                            </span>
-                        </div>
-                        <div class="config-item">
-                            <div class="config-item-info">
-                                <h4>HMAC Signature Verification</h4>
-                                <p>Verify ${data.security.hmac.algorithm} signatures in ${data.security.hmac.headerName}</p>
-                            </div>
-                            <span style="font-weight: 600; color: ${data.security.hmac.enabled ? 'var(--success)' : 'var(--text-muted)'}">
-                                ${data.security.hmac.enabled ? 'Enabled' : 'Disabled'}
-                            </span>
-                        </div>
-                        <div class="config-item">
-                            <div class="config-item-info">
-                                <h4>Rate Limiting</h4>
-                                <p>${data.security.rateLimit.enabled ? `${data.security.rateLimit.requestsPerMinute}/min, ${data.security.rateLimit.requestsPerHour}/hour` : 'No limits configured'}</p>
-                            </div>
-                            <span style="font-weight: 600; color: ${data.security.rateLimit.enabled ? 'var(--success)' : 'var(--text-muted)'}">
-                                ${data.security.rateLimit.enabled ? 'Enabled' : 'Disabled'}
-                            </span>
                         </div>
                     </div>
-                </div>
 
-                <div class="config-section">
-                    <h3 class="config-section-title">&#128221; Logging Settings</h3>
-                    <div class="config-group">
-                        <div class="config-item">
-                            <div class="config-item-info">
-                                <h4>File Logging</h4>
-                                <p>Write logs to ${data.logging.logDirectory}</p>
+                    <div class="config-section">
+                        <h3 class="config-section-title">&#128274; Security Settings</h3>
+                        <div class="config-group">
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>IP Allowlist</h4>
+                                    <p>Restrict access by IP address</p>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="cfg-ipAllowlistEnabled"
+                                        ${data.security.ipAllowlist.enabled ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
                             </div>
-                            <span style="font-weight: 600; color: ${data.logging.enabled ? 'var(--success)' : 'var(--text-muted)'}">
-                                ${data.logging.enabled ? 'Enabled' : 'Disabled'}
-                            </span>
-                        </div>
-                        <div class="config-item">
-                            <div class="config-item-info">
-                                <h4>Max Log File Size</h4>
-                                <p>Rotate logs after reaching this size</p>
+                            <div class="config-item" style="flex-direction: column; align-items: stretch; gap: 0.5rem;">
+                                <div class="config-item-info">
+                                    <h4>Allowed IPs</h4>
+                                    <p class="config-hint">One IP per line (e.g., 192.168.1.100)</p>
+                                </div>
+                                <textarea class="form-textarea" id="cfg-allowedIps" rows="2"
+                                    placeholder="Enter IPs, one per line">${(data.security.ipAllowlist.allowedIps || []).join('\\n')}</textarea>
                             </div>
-                            <span style="font-weight: 600; color: var(--accent)">${data.logging.maxFileSizeMB} MB</span>
+                            <div class="config-item" style="flex-direction: column; align-items: stretch; gap: 0.5rem;">
+                                <div class="config-item-info">
+                                    <h4>Allowed CIDRs</h4>
+                                    <p class="config-hint">One CIDR per line (e.g., 10.0.0.0/8)</p>
+                                </div>
+                                <textarea class="form-textarea" id="cfg-allowedCidrs" rows="2"
+                                    placeholder="Enter CIDRs, one per line">${(data.security.ipAllowlist.allowedCidrs || []).join('\\n')}</textarea>
+                            </div>
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Allow Private Networks</h4>
+                                    <p>Allow requests from private IP ranges</p>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="cfg-allowPrivateNetworks"
+                                        ${data.security.ipAllowlist.allowPrivateNetworks ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <p style="margin-top: 2rem; color: var(--text-muted); font-size: 0.9rem;">
-                    &#128161; To modify these settings, edit <code style="background: var(--bg-secondary); padding: 0.25rem 0.5rem; border-radius: 4px;">appsettings.json</code> and restart the service.
-                </p>
+                    <div class="config-section">
+                        <h3 class="config-section-title">&#128273; API Key Authentication</h3>
+                        <div class="config-group">
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Enable API Key Auth</h4>
+                                    <p>Require API key for webhook requests</p>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="cfg-apiKeyEnabled"
+                                        ${data.security.apiKey.enabled ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Header Name</h4>
+                                    <p>HTTP header containing the API key</p>
+                                </div>
+                                <input type="text" class="form-input wide" id="cfg-apiKeyHeaderName"
+                                    value="${data.security.apiKey.headerName}" placeholder="X-API-Key">
+                            </div>
+                            <div class="config-item" style="flex-direction: column; align-items: stretch; gap: 0.5rem;">
+                                <div class="config-item-info">
+                                    <h4>Valid API Keys</h4>
+                                    <p class="config-hint">One key per line. Current keys: ${data.security.apiKey.keyCount}. Leave empty to keep existing keys.</p>
+                                </div>
+                                <textarea class="form-textarea" id="cfg-validKeys" rows="2"
+                                    placeholder="Enter new API keys (one per line) to replace existing keys"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                        <h3 class="config-section-title">&#128272; HMAC Signature Verification</h3>
+                        <div class="config-group">
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Enable HMAC Verification</h4>
+                                    <p>Verify request signatures</p>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="cfg-hmacEnabled"
+                                        ${data.security.hmac.enabled ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Signature Header</h4>
+                                    <p>HTTP header containing the signature</p>
+                                </div>
+                                <input type="text" class="form-input wide" id="cfg-hmacHeaderName"
+                                    value="${data.security.hmac.headerName}" placeholder="X-Signature">
+                            </div>
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Algorithm</h4>
+                                    <p>HMAC algorithm to use</p>
+                                </div>
+                                <select class="form-input" id="cfg-hmacAlgorithm">
+                                    <option value="HMACSHA256" ${data.security.hmac.algorithm === 'HMACSHA256' ? 'selected' : ''}>HMACSHA256</option>
+                                    <option value="HMACSHA384" ${data.security.hmac.algorithm === 'HMACSHA384' ? 'selected' : ''}>HMACSHA384</option>
+                                    <option value="HMACSHA512" ${data.security.hmac.algorithm === 'HMACSHA512' ? 'selected' : ''}>HMACSHA512</option>
+                                </select>
+                            </div>
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Shared Secret</h4>
+                                    <p class="config-hint">${data.security.hmac.hasSecret ? 'Secret is configured' : 'No secret configured'}. Leave empty to keep existing.</p>
+                                </div>
+                                <input type="password" class="form-input wide" id="cfg-hmacSharedSecret"
+                                    placeholder="Enter new secret to change">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                        <h3 class="config-section-title">&#9201; Rate Limiting</h3>
+                        <div class="config-group">
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Enable Rate Limiting</h4>
+                                    <p>Limit requests per time period</p>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="cfg-rateLimitEnabled"
+                                        ${data.security.rateLimit.enabled ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Requests per Minute</h4>
+                                    <p>Maximum requests allowed per minute</p>
+                                </div>
+                                <input type="number" class="form-input" id="cfg-requestsPerMinute"
+                                    value="${data.security.rateLimit.requestsPerMinute}" min="1" max="10000">
+                            </div>
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Requests per Hour</h4>
+                                    <p>Maximum requests allowed per hour</p>
+                                </div>
+                                <input type="number" class="form-input" id="cfg-requestsPerHour"
+                                    value="${data.security.rateLimit.requestsPerHour}" min="1" max="100000">
+                            </div>
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Per IP Address</h4>
+                                    <p>Apply limits per IP (vs. globally)</p>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="cfg-perIpAddress"
+                                        ${data.security.rateLimit.perIpAddress ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                        <h3 class="config-section-title">&#128221; Logging Settings</h3>
+                        <div class="config-group">
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>File Logging</h4>
+                                    <p>Write logs to disk</p>
+                                </div>
+                                <label class="toggle">
+                                    <input type="checkbox" id="cfg-loggingEnabled"
+                                        ${data.logging.enabled ? 'checked' : ''}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>Max Log File Size (MB)</h4>
+                                    <p>Rotate logs after reaching this size</p>
+                                </div>
+                                <input type="number" class="form-input" id="cfg-maxLogFileSizeMB"
+                                    value="${data.logging.maxFileSizeMB}" min="1" max="1000">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-actions">
+                        <button type="submit" class="btn btn-success" id="saveConfigBtn">
+                            &#128190; Save Configuration
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="loadAllData()">
+                            &#8635; Reset
+                        </button>
+                        <span id="saveStatus" class="save-status"></span>
+                    </div>
+                </form>
             `;
+        }
+
+        async function saveConfiguration(event) {
+            event.preventDefault();
+
+            const saveBtn = document.getElementById('saveConfigBtn');
+            const saveStatus = document.getElementById('saveStatus');
+
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '&#8987; Saving...';
+            saveStatus.className = 'save-status';
+            saveStatus.textContent = '';
+
+            // Parse textarea values into arrays
+            const parseLines = (text) => text.split('\\n').map(l => l.trim()).filter(l => l);
+
+            const configUpdate = {
+                webhook: {
+                    maxPayloadSizeBytes: parseInt(document.getElementById('cfg-maxPayloadSizeMB').value) * 1024 * 1024,
+                    enablePayloadPersistence: document.getElementById('cfg-enablePayloadPersistence').checked,
+                    payloadRetentionDays: parseInt(document.getElementById('cfg-payloadRetentionDays').value),
+                    alwaysReturn200: document.getElementById('cfg-alwaysReturn200').checked
+                },
+                security: {
+                    ipAllowlist: {
+                        enabled: document.getElementById('cfg-ipAllowlistEnabled').checked,
+                        allowedIps: parseLines(document.getElementById('cfg-allowedIps').value),
+                        allowedCidrs: parseLines(document.getElementById('cfg-allowedCidrs').value),
+                        allowPrivateNetworks: document.getElementById('cfg-allowPrivateNetworks').checked
+                    },
+                    apiKey: {
+                        enabled: document.getElementById('cfg-apiKeyEnabled').checked,
+                        headerName: document.getElementById('cfg-apiKeyHeaderName').value || 'X-API-Key'
+                    },
+                    hmac: {
+                        enabled: document.getElementById('cfg-hmacEnabled').checked,
+                        headerName: document.getElementById('cfg-hmacHeaderName').value || 'X-Signature',
+                        algorithm: document.getElementById('cfg-hmacAlgorithm').value
+                    },
+                    rateLimit: {
+                        enabled: document.getElementById('cfg-rateLimitEnabled').checked,
+                        requestsPerMinute: parseInt(document.getElementById('cfg-requestsPerMinute').value),
+                        requestsPerHour: parseInt(document.getElementById('cfg-requestsPerHour').value),
+                        perIpAddress: document.getElementById('cfg-perIpAddress').checked
+                    }
+                },
+                logging: {
+                    enabled: document.getElementById('cfg-loggingEnabled').checked,
+                    maxFileSizeBytes: parseInt(document.getElementById('cfg-maxLogFileSizeMB').value) * 1024 * 1024
+                }
+            };
+
+            // Add optional fields only if provided
+            const validKeys = parseLines(document.getElementById('cfg-validKeys').value);
+            if (validKeys.length > 0) {
+                configUpdate.security.apiKey.validKeys = validKeys;
+            }
+
+            const hmacSecret = document.getElementById('cfg-hmacSharedSecret').value;
+            if (hmacSecret) {
+                configUpdate.security.hmac.sharedSecret = hmacSecret;
+            }
+
+            try {
+                const response = await fetch('/api/dashboard/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(configUpdate)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    saveStatus.className = 'save-status success';
+                    saveStatus.innerHTML = '&#10003; ' + result.message;
+                    showToast('Configuration saved! Changes are now active.', 'success');
+
+                    // Reload configuration to reflect changes
+                    setTimeout(async () => {
+                        const newConfig = await fetchAPI('config');
+                        if (newConfig) updateConfig(newConfig);
+                        const newStats = await fetchAPI('stats');
+                        if (newStats) updateStats(newStats);
+                    }, 500);
+                } else {
+                    throw new Error(result.message || result.error || 'Save failed');
+                }
+            } catch (error) {
+                saveStatus.className = 'save-status error';
+                saveStatus.innerHTML = '&#10007; ' + error.message;
+                showToast('Failed to save configuration: ' + error.message, 'error');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '&#128190; Save Configuration';
+            }
         }
 
         function updateEndpoint(data) {

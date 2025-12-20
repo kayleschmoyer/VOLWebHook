@@ -8,6 +8,14 @@ using VOLWebHook.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Enable configuration reload on file change
+builder.Configuration.Sources.Clear();
+builder.Configuration
+    .SetBasePath(builder.Environment.ContentRootPath)
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
+
 // Add CORS for development
 builder.Services.AddCors(options =>
 {
@@ -45,6 +53,7 @@ builder.Logging.AddRollingFile(loggingSettings);
 // Services
 builder.Services.AddSingleton<IWebhookPersistenceService, FileWebhookPersistenceService>();
 builder.Services.AddScoped<IWebhookProcessingService, WebhookProcessingService>();
+builder.Services.AddSingleton<IConfigurationWriterService, ConfigurationWriterService>();
 
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();

@@ -8,32 +8,43 @@ public sealed class RateLimitingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<RateLimitingMiddleware> _logger;
-    private readonly RateLimitSettings _settings;
+    private readonly IOptionsMonitor<SecuritySettings> _securitySettings;
     private readonly ConcurrentDictionary<string, RateLimitCounter> _counters = new();
     private readonly Timer _cleanupTimer;
 
     public RateLimitingMiddleware(
         RequestDelegate next,
-        IOptions<SecuritySettings> settings,
+        IOptionsMonitor<SecuritySettings> settings,
         ILogger<RateLimitingMiddleware> logger)
     {
         _next = next;
         _logger = logger;
-        _settings = settings.Value.RateLimit;
+        _securitySettings = settings;
 
         // Cleanup expired entries every 5 minutes
         _cleanupTimer = new Timer(CleanupExpiredEntries, null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
+
+        // Log configuration changes
+        settings.OnChange(newSettings =>
+        {
+            var rateLimit = newSettings.RateLimit;
+            _logger.LogInformation(
+                "Rate limit configuration reloaded: Enabled={Enabled}, PerMin={PerMin}, PerHour={PerHour}",
+                rateLimit.Enabled, rateLimit.RequestsPerMinute, rateLimit.RequestsPerHour);
+        });
     }
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (!_settings.Enabled)
+        var settings = _securitySettings.CurrentValue.RateLimit;
+
+        if (!settings.Enabled)
         {
             await _next(context);
             return;
         }
 
-        var clientKey = GetClientKey(context);
+        var clientKey = GetClientKey(context, settings);
         var counter = _counters.GetOrAdd(clientKey, _ => new RateLimitCounter());
 
         var now = DateTime.UtcNow;
@@ -43,20 +54,20 @@ public sealed class RateLimitingMiddleware
         var minuteCount = counter.GetMinuteCount(now);
         var hourCount = counter.GetHourCount(now);
 
-        if (minuteCount >= _settings.RequestsPerMinute)
+        if (minuteCount >= settings.RequestsPerMinute)
         {
             _logger.LogWarning("Rate limit exceeded (per minute) for client {ClientKey}: {Count}/{Limit}",
-                clientKey, minuteCount, _settings.RequestsPerMinute);
+                clientKey, minuteCount, settings.RequestsPerMinute);
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
             context.Response.Headers.Append("Retry-After", "60");
             await context.Response.WriteAsync("Rate limit exceeded. Try again later.");
             return;
         }
 
-        if (hourCount >= _settings.RequestsPerHour)
+        if (hourCount >= settings.RequestsPerHour)
         {
             _logger.LogWarning("Rate limit exceeded (per hour) for client {ClientKey}: {Count}/{Limit}",
-                clientKey, hourCount, _settings.RequestsPerHour);
+                clientKey, hourCount, settings.RequestsPerHour);
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
             context.Response.Headers.Append("Retry-After", "3600");
             await context.Response.WriteAsync("Rate limit exceeded. Try again later.");
@@ -66,9 +77,9 @@ public sealed class RateLimitingMiddleware
         await _next(context);
     }
 
-    private string GetClientKey(HttpContext context)
+    private static string GetClientKey(HttpContext context, RateLimitSettings settings)
     {
-        if (!_settings.PerIpAddress)
+        if (!settings.PerIpAddress)
         {
             return "global";
         }

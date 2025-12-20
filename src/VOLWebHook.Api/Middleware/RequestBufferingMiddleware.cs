@@ -8,27 +8,37 @@ public sealed class RequestBufferingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<RequestBufferingMiddleware> _logger;
-    private readonly WebhookSettings _settings;
+    private readonly IOptionsMonitor<WebhookSettings> _webhookSettings;
 
     public RequestBufferingMiddleware(
         RequestDelegate next,
-        IOptions<WebhookSettings> settings,
+        IOptionsMonitor<WebhookSettings> settings,
         ILogger<RequestBufferingMiddleware> logger)
     {
         _next = next;
         _logger = logger;
-        _settings = settings.Value;
+        _webhookSettings = settings;
+
+        // Log configuration changes
+        settings.OnChange(newSettings =>
+        {
+            _logger.LogInformation(
+                "Webhook settings reloaded: MaxPayloadSize={MaxSize}",
+                newSettings.MaxPayloadSizeBytes);
+        });
     }
 
     public async Task InvokeAsync(HttpContext context)
     {
+        var settings = _webhookSettings.CurrentValue;
+
         // Check content length before buffering
-        if (context.Request.ContentLength > _settings.MaxPayloadSizeBytes)
+        if (context.Request.ContentLength > settings.MaxPayloadSizeBytes)
         {
             _logger.LogWarning("Request payload too large: {Size} bytes (max: {MaxSize})",
-                context.Request.ContentLength, _settings.MaxPayloadSizeBytes);
+                context.Request.ContentLength, settings.MaxPayloadSizeBytes);
             context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
-            await context.Response.WriteAsync($"Payload too large. Maximum size: {_settings.MaxPayloadSizeBytes} bytes");
+            await context.Response.WriteAsync($"Payload too large. Maximum size: {settings.MaxPayloadSizeBytes} bytes");
             return;
         }
 
@@ -45,12 +55,12 @@ public sealed class RequestBufferingMiddleware
 
         // Check byte size, not character count (important for multi-byte characters)
         var byteSize = Encoding.UTF8.GetByteCount(body);
-        if (byteSize > _settings.MaxPayloadSizeBytes)
+        if (byteSize > settings.MaxPayloadSizeBytes)
         {
             _logger.LogWarning("Request payload too large after reading: {Size} bytes (max: {MaxSize})",
-                byteSize, _settings.MaxPayloadSizeBytes);
+                byteSize, settings.MaxPayloadSizeBytes);
             context.Response.StatusCode = StatusCodes.Status413PayloadTooLarge;
-            await context.Response.WriteAsync($"Payload too large. Maximum size: {_settings.MaxPayloadSizeBytes} bytes");
+            await context.Response.WriteAsync($"Payload too large. Maximum size: {settings.MaxPayloadSizeBytes} bytes");
             return;
         }
 
