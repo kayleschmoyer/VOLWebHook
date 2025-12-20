@@ -1,11 +1,23 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.FileProviders;
 using VOLWebHook.Api.Configuration;
 using VOLWebHook.Api.Logging;
 using VOLWebHook.Api.Middleware;
 using VOLWebHook.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Add CORS for development
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowDashboard", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 // Configuration
 var webhookSettings = builder.Configuration
@@ -45,16 +57,33 @@ builder.WebHost.ConfigureKestrel(options =>
 
 var app = builder.Build();
 
-// Middleware pipeline
-app.UseMiddleware<RequestBufferingMiddleware>();
-app.UseMiddleware<IpAllowlistMiddleware>();
-app.UseMiddleware<ApiKeyAuthenticationMiddleware>();
-app.UseMiddleware<HmacSignatureMiddleware>();
-app.UseMiddleware<RateLimitingMiddleware>();
+// Static files for dashboard
+var wwwrootPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+if (Directory.Exists(wwwrootPath))
+{
+    app.UseDefaultFiles();
+    app.UseStaticFiles();
+}
+
+// CORS
+app.UseCors("AllowDashboard");
+
+// Security middleware only for webhook endpoint
+app.UseWhen(context => context.Request.Path.StartsWithSegments("/webhook"), appBuilder =>
+{
+    appBuilder.UseMiddleware<RequestBufferingMiddleware>();
+    appBuilder.UseMiddleware<IpAllowlistMiddleware>();
+    appBuilder.UseMiddleware<ApiKeyAuthenticationMiddleware>();
+    appBuilder.UseMiddleware<HmacSignatureMiddleware>();
+    appBuilder.UseMiddleware<RateLimitingMiddleware>();
+});
 
 app.UseRouting();
 
 app.MapControllers();
+
+// SPA fallback - serve index.html for non-API routes
+app.MapFallbackToFile("index.html");
 
 // Health check with detailed response
 app.MapHealthChecks("/health", new HealthCheckOptions
