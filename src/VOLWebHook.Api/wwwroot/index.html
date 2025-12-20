@@ -1359,6 +1359,29 @@
                                 <textarea class="form-textarea" id="cfg-validKeys" rows="2"
                                     placeholder="Enter new API keys (one per line) to replace existing keys"></textarea>
                             </div>
+                            <div class="config-item" style="flex-direction: column; align-items: stretch; gap: 0.75rem;">
+                                <div class="config-item-info">
+                                    <h4>Generate New API Key</h4>
+                                    <p class="config-hint">Create a new secure API key and automatically add it to the allowed list.</p>
+                                </div>
+                                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                                    <button type="button" class="btn btn-success" id="btn-generate-api-key" onclick="generateApiKey()">
+                                        &#128273; Generate API Key
+                                    </button>
+                                    <div id="generated-key-container" style="display: none; flex: 1; min-width: 300px;">
+                                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                            <input type="text" class="form-input" id="generated-api-key" readonly
+                                                style="flex: 1; font-family: 'Fira Code', monospace; font-size: 0.85rem;">
+                                            <button type="button" class="btn btn-secondary" onclick="copyApiKey()" title="Copy to clipboard">
+                                                &#128203; Copy
+                                            </button>
+                                        </div>
+                                        <p class="config-hint" style="margin-top: 0.5rem; color: var(--warning);">
+                                            &#9888; Copy this key now - it won't be shown again!
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1685,6 +1708,43 @@
                 setTimeout(loadAllData, 500);
             } else {
                 showToast('Failed to send test webhook', 'error');
+            }
+        }
+
+        async function generateApiKey() {
+            const btn = document.getElementById('btn-generate-api-key');
+            const container = document.getElementById('generated-key-container');
+            const keyInput = document.getElementById('generated-api-key');
+
+            btn.disabled = true;
+            btn.innerHTML = '&#9203; Generating...';
+
+            try {
+                const response = await fetch('/api/dashboard/generate-api-key', { method: 'POST' });
+                const result = await response.json();
+
+                if (result.success) {
+                    keyInput.value = result.apiKey;
+                    container.style.display = 'block';
+                    showToast(`API key generated! Total keys: ${result.totalKeys}`, 'success');
+                    // Refresh config to update the key count
+                    setTimeout(loadAllData, 500);
+                } else {
+                    showToast(result.message || 'Failed to generate API key', 'error');
+                }
+            } catch (error) {
+                showToast('Failed to generate API key', 'error');
+                console.error('Generate API key error:', error);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '&#128273; Generate API Key';
+            }
+        }
+
+        function copyApiKey() {
+            const keyInput = document.getElementById('generated-api-key');
+            if (keyInput.value) {
+                copyToClipboard(keyInput.value, 'API Key');
             }
         }
 
