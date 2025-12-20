@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOLWebHook - Enterprise Webhook Capture</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #1e293b;
+            --bg-card-hover: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #334155;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --gradient-4: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .light-mode {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* Animated background */
+        .bg-pattern {
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .logo h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--bg-secondary);
+            padding: 0.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .nav-tab {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-tab:hover { color: var(--text-primary); background: var(--bg-card-hover); }
+        .nav-tab.active { background: var(--accent); color: white; }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+        .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover { background: var(--bg-card-hover); }
+
+        .btn-icon {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-icon:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+
+        .stat-card:nth-child(1)::before { background: var(--gradient-1); }
+        .stat-card:nth-child(2)::before { background: var(--gradient-3); }
+        .stat-card:nth-child(3)::before { background: var(--gradient-4); }
+        .stat-card:nth-child(4)::before { background: var(--gradient-2); }
+
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-card:nth-child(1) .stat-icon { background: rgba(102, 126, 234, 0.2); }
+        .stat-card:nth-child(2) .stat-icon { background: rgba(79, 172, 254, 0.2); }
+        .stat-card:nth-child(3) .stat-icon { background: rgba(67, 233, 123, 0.2); }
+        .stat-card:nth-child(4) .stat-icon { background: rgba(240, 147, 251, 0.2); }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .stat-change {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .stat-change.positive { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .stat-change.neutral { background: rgba(148, 163, 184, 0.2); color: var(--text-secondary); }
+
+        /* Panels */
+        .panel {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .panel-body { padding: 1.5rem; }
+
+        /* Webhook List */
+        .webhook-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .webhook-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .webhook-item:hover { background: var(--bg-card-hover); }
+        .webhook-item:last-child { border-bottom: none; }
+
+        .webhook-method {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            background: rgba(59, 130, 246, 0.2);
+            color: var(--accent);
+            text-transform: uppercase;
+        }
+
+        .webhook-info h4 {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+            font-size: 0.95rem;
+        }
+
+        .webhook-info p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .webhook-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .status-dot.valid { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .status-dot.invalid { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+        .webhook-time {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        /* Security Status */
+        .security-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .security-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .security-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .security-icon.enabled { background: rgba(16, 185, 129, 0.2); }
+        .security-icon.disabled { background: rgba(148, 163, 184, 0.15); }
+
+        .security-info h4 { font-weight: 600; font-size: 0.9rem; }
+        .security-info p { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* Toggle Switch */
+        .toggle {
+            position: relative;
+            width: 48px;
+            height: 26px;
+        }
+
+        .toggle input { opacity: 0; width: 0; height: 0; }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: var(--border);
+            border-radius: 26px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle input:checked + .toggle-slider { background: var(--success); }
+        .toggle input:checked + .toggle-slider::before { transform: translateX(22px); }
+
+        /* Configuration Panel */
+        .config-section {
+            margin-bottom: 2rem;
+        }
+
+        .config-section:last-child { margin-bottom: 0; }
+
+        .config-section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .config-group {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .config-item-info h4 {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .config-item-info p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+
+        .modal {
+            background: var(--bg-card);
+            border-radius: 20px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow: hidden;
+            transform: scale(0.9);
+            transition: transform 0.3s;
+            border: 1px solid var(--border);
+        }
+
+        .modal-overlay.active .modal { transform: scale(1); }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title { font-size: 1.25rem; font-weight: 700; }
+
+        .modal-close {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover { background: var(--danger); color: white; }
+
+        .modal-body {
+            padding: 1.5rem;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        /* Code Block */
+        .code-block {
+            background: #0d1117;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .code-header {
+            padding: 0.75rem 1rem;
+            background: rgba(255,255,255,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .code-content {
+            padding: 1rem;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Monaco', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* Help Section */
+        .help-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .help-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+
+        .help-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+
+        .help-card-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .help-card:nth-child(1) .help-card-icon { background: var(--gradient-1); }
+        .help-card:nth-child(2) .help-card-icon { background: var(--gradient-3); }
+        .help-card:nth-child(3) .help-card-icon { background: var(--gradient-4); }
+        .help-card:nth-child(4) .help-card-icon { background: var(--gradient-2); }
+
+        .help-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .help-card p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; }
+
+        /* Endpoint Display */
+        .endpoint-display {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .endpoint-method {
+            background: var(--success);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .endpoint-url {
+            flex: 1;
+            font-family: 'Fira Code', monospace;
+            font-size: 1rem;
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+
+        .copy-btn {
+            padding: 0.5rem 1rem;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover { background: var(--accent-hover); }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
+        .empty-state p { color: var(--text-muted); margin-bottom: 1.5rem; }
+
+        /* Toast */
+        .toast-container {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .toast {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Live indicator */
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            header { flex-direction: column; gap: 1rem; text-align: center; }
+            .header-actions { width: 100%; justify-content: center; }
+            .nav-tabs { flex-wrap: wrap; justify-content: center; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .stat-value { font-size: 2rem; }
+            .webhook-item { grid-template-columns: 1fr; gap: 0.5rem; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-secondary); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* Tab content */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* Grid layouts */
+        .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; }
+        @media (max-width: 1024px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        /* Detail view */
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .detail-item {
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+        }
+
+        .detail-item label {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .detail-item span {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .headers-list {
+            display: grid;
+            gap: 0.5rem;
+        }
+
+        .header-row {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 1rem;
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        .header-row .key {
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .header-row .value {
+            color: var(--text-secondary);
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+    <div class="toast-container" id="toastContainer"></div>
+
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">&#9889;</div>
+                <div>
+                    <h1>VOLWebHook</h1>
+                    <p>Enterprise Webhook Capture Service</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="live-indicator">
+                    <span class="live-dot"></span>
+                    <span>Live</span>
+                </div>
+                <button class="btn-icon" onclick="toggleTheme()" title="Toggle theme">
+                    <span id="themeIcon">&#9790;</span>
+                </button>
+                <button class="btn btn-primary" onclick="sendTestWebhook()">
+                    <span>&#9889;</span> Send Test
+                </button>
+            </div>
+        </header>
+
+        <nav class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('dashboard')">
+                <span>&#128200;</span> Dashboard
+            </button>
+            <button class="nav-tab" onclick="showTab('webhooks')">
+                <span>&#128229;</span> Webhooks
+            </button>
+            <button class="nav-tab" onclick="showTab('config')">
+                <span>&#9881;</span> Configuration
+            </button>
+            <button class="nav-tab" onclick="showTab('help')">
+                <span>&#10067;</span> Help
+            </button>
+        </nav>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">&#128229;</div>
+                        <span class="stat-change positive" id="todayChange">+0 today</span>
+                    </div>
+                    <div class="stat-value" id="totalWebhooks">-</div>
+                    <div class="stat-label">Total Webhooks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">&#128337;</div>
+                    </div>
+                    <div class="stat-value" id="lastHourWebhooks">-</div>
+                    <div class="stat-label">Last Hour</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">&#128190;</div>
+                    </div>
+                    <div class="stat-value" id="storageUsed">-</div>
+                    <div class="stat-label">Storage Used</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-icon">&#9889;</div>
+                    </div>
+                    <div class="stat-value" id="uptime">-</div>
+                    <div class="stat-label">Uptime</div>
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <span>&#128229;</span> Recent Webhooks
+                        </div>
+                        <button class="btn btn-secondary" onclick="refreshWebhooks()">
+                            <span>&#8635;</span> Refresh
+                        </button>
+                    </div>
+                    <div class="webhook-list" id="recentWebhooks">
+                        <div class="empty-state">
+                            <div class="spinner"></div>
+                            <p style="margin-top: 1rem;">Loading webhooks...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <span>&#128274;</span> Security Status
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="security-grid" id="securityStatus">
+                            <div class="security-item">
+                                <div class="spinner"></div>
+                                <div class="security-info">
+                                    <h4>Loading...</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Webhooks Tab -->
+        <div id="webhooks" class="tab-content">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>&#128229;</span> All Webhooks
+                    </div>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <input type="text" id="searchInput" placeholder="Search webhooks..."
+                            style="padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); width: 250px;"
+                            onkeyup="searchWebhooks(this.value)">
+                        <button class="btn btn-secondary" onclick="refreshWebhooks()">
+                            <span>&#8635;</span> Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="webhook-list" id="allWebhooks">
+                    <div class="empty-state">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 1rem;">Loading webhooks...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration Tab -->
+        <div id="config" class="tab-content">
+            <div class="endpoint-display">
+                <span class="endpoint-method">POST</span>
+                <span class="endpoint-url" id="webhookUrl">Loading...</span>
+                <button class="copy-btn" onclick="copyEndpoint()">&#128203; Copy</button>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>&#9881;</span> Current Configuration
+                    </div>
+                </div>
+                <div class="panel-body" id="configContent">
+                    <div class="empty-state">
+                        <div class="spinner"></div>
+                        <p style="margin-top: 1rem;">Loading configuration...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Tab -->
+        <div id="help" class="tab-content">
+            <div class="help-cards">
+                <div class="help-card">
+                    <div class="help-card-icon">&#128640;</div>
+                    <h3>What is VOLWebHook?</h3>
+                    <p>VOLWebHook is an enterprise-grade webhook capture service. It receives HTTP requests from external services (like payment providers, CI/CD tools, or any API) and stores them for inspection and debugging.</p>
+                </div>
+                <div class="help-card">
+                    <div class="help-card-icon">&#128301;</div>
+                    <h3>How to Send Webhooks</h3>
+                    <p>Send a POST request to the webhook endpoint with any JSON payload. Each request is captured with full headers, body, and metadata. Use the "Send Test" button to try it out!</p>
+                </div>
+                <div class="help-card">
+                    <div class="help-card-icon">&#128274;</div>
+                    <h3>Security Features</h3>
+                    <p>Enable IP allowlisting, API key authentication, HMAC signature verification, and rate limiting to secure your webhook endpoint against unauthorized access.</p>
+                </div>
+                <div class="help-card">
+                    <div class="help-card-icon">&#128202;</div>
+                    <h3>Viewing Data</h3>
+                    <p>Click on any webhook in the list to see full details including headers, parsed JSON body, source IP, and timestamps. Search and filter to find specific requests.</p>
+                </div>
+            </div>
+
+            <div class="panel" style="margin-top: 2rem;">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span>&#128187;</span> Quick Start - cURL Example
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span>bash</span>
+                            <button class="copy-btn" onclick="copyCurl()">Copy</button>
+                        </div>
+                        <pre class="code-content" id="curlExample">Loading...</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Webhook Detail Modal -->
+    <div class="modal-overlay" id="webhookModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Webhook Details</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="webhookModalContent">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentTheme = localStorage.getItem('theme') || 'dark';
+        let stats = null;
+        let config = null;
+        let webhooks = [];
+        let refreshInterval = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            applyTheme();
+            loadAllData();
+            startAutoRefresh();
+        });
+
+        // Theme
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', currentTheme);
+            applyTheme();
+        }
+
+        function applyTheme() {
+            document.body.classList.toggle('light-mode', currentTheme === 'light');
+            document.getElementById('themeIcon').textContent = currentTheme === 'dark' ? '☀️' : '🌙';
+        }
+
+        // Tabs
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            event.target.closest('.nav-tab').classList.add('active');
+        }
+
+        // API Calls
+        async function fetchAPI(endpoint) {
+            try {
+                const response = await fetch(`/api/dashboard/${endpoint}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return await response.json();
+            } catch (error) {
+                console.error(`API Error (${endpoint}):`, error);
+                return null;
+            }
+        }
+
+        async function loadAllData() {
+            const [statsData, configData, webhooksData, endpointData] = await Promise.all([
+                fetchAPI('stats'),
+                fetchAPI('config'),
+                fetchAPI('webhooks?limit=50'),
+                fetchAPI('endpoint-info')
+            ]);
+
+            if (statsData) updateStats(statsData);
+            if (configData) updateConfig(configData);
+            if (webhooksData) updateWebhooks(webhooksData.webhooks);
+            if (endpointData) updateEndpoint(endpointData);
+        }
+
+        function updateStats(data) {
+            stats = data;
+            document.getElementById('totalWebhooks').textContent = data.webhooks.total.toLocaleString();
+            document.getElementById('lastHourWebhooks').textContent = data.webhooks.lastHour.toLocaleString();
+            document.getElementById('storageUsed').textContent = data.storage.totalFormatted;
+            document.getElementById('uptime').textContent = data.uptimeFormatted;
+            document.getElementById('todayChange').textContent = `+${data.webhooks.today} today`;
+
+            // Security status
+            const securityHtml = `
+                <div class="security-item">
+                    <div class="security-icon ${data.security.ipAllowlist ? 'enabled' : 'disabled'}">&#127760;</div>
+                    <div class="security-info">
+                        <h4>IP Allowlist</h4>
+                        <p>${data.security.ipAllowlist ? 'Enabled' : 'Disabled'}</p>
+                    </div>
+                </div>
+                <div class="security-item">
+                    <div class="security-icon ${data.security.apiKey ? 'enabled' : 'disabled'}">&#128273;</div>
+                    <div class="security-info">
+                        <h4>API Key Auth</h4>
+                        <p>${data.security.apiKey ? 'Enabled' : 'Disabled'}</p>
+                    </div>
+                </div>
+                <div class="security-item">
+                    <div class="security-icon ${data.security.hmac ? 'enabled' : 'disabled'}">&#128272;</div>
+                    <div class="security-info">
+                        <h4>HMAC Signature</h4>
+                        <p>${data.security.hmac ? 'Enabled' : 'Disabled'}</p>
+                    </div>
+                </div>
+                <div class="security-item">
+                    <div class="security-icon ${data.security.rateLimit ? 'enabled' : 'disabled'}">&#9201;</div>
+                    <div class="security-info">
+                        <h4>Rate Limiting</h4>
+                        <p>${data.security.rateLimit ? 'Enabled' : 'Disabled'}</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('securityStatus').innerHTML = securityHtml;
+        }
+
+        function updateWebhooks(data) {
+            webhooks = data;
+            renderWebhooks('recentWebhooks', data.slice(0, 10));
+            renderWebhooks('allWebhooks', data);
+        }
+
+        function renderWebhooks(containerId, data) {
+            const container = document.getElementById(containerId);
+
+            if (!data || data.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">&#128229;</div>
+                        <h3>No Webhooks Yet</h3>
+                        <p>Send your first webhook to see it here</p>
+                        <button class="btn btn-primary" onclick="sendTestWebhook()">
+                            &#9889; Send Test Webhook
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = data.map(w => `
+                <div class="webhook-item" onclick="viewWebhook('${w.id}')">
+                    <span class="webhook-method">${w.httpMethod}</span>
+                    <div class="webhook-info">
+                        <h4>${w.path}${w.queryString ? '?' + w.queryString : ''}</h4>
+                        <p>${w.sourceIpAddress} &bull; ${w.contentLengthFormatted}</p>
+                    </div>
+                    <div class="webhook-status">
+                        <span class="status-dot ${w.isValidJson ? 'valid' : 'invalid'}"></span>
+                        <span style="font-size: 0.8rem; color: var(--text-muted)">
+                            ${w.isValidJson ? 'Valid JSON' : 'Invalid'}
+                        </span>
+                    </div>
+                    <div class="webhook-time">${w.receivedAtFormatted}</div>
+                </div>
+            `).join('');
+        }
+
+        function updateConfig(data) {
+            config = data;
+            document.getElementById('configContent').innerHTML = `
+                <div class="config-section">
+                    <h3 class="config-section-title">&#128229; Webhook Settings</h3>
+                    <div class="config-group">
+                        <div class="config-item">
+                            <div class="config-item-info">
+                                <h4>Max Payload Size</h4>
+                                <p>Maximum allowed request body size</p>
+                            </div>
+                            <span style="font-weight: 600; color: var(--accent)">${data.webhook.maxPayloadSizeMB} MB</span>
+                        </div>
+                        <div class="config-item">
+                            <div class="config-item-info">
+                                <h4>Storage Persistence</h4>
+                                <p>Save webhooks to disk</p>
+                            </div>
+                            <span style="font-weight: 600; color: ${data.webhook.enablePayloadPersistence ? 'var(--success)' : 'var(--text-muted)'}">
+                                ${data.webhook.enablePayloadPersistence ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </div>
+                        <div class="config-item">
+                            <div class="config-item-info">
+                                <h4>Retention Period</h4>
+                                <p>How long to keep webhook data</p>
+                            </div>
+                            <span style="font-weight: 600; color: var(--accent)">${data.webhook.payloadRetentionDays} days</span>
+                        </div>
+                        <div class="config-item">
+                            <div class="config-item-info">
+                                <h4>Always Return 200</h4>
+                                <p>Return success even on errors</p>
+                            </div>
+                            <span style="font-weight: 600; color: ${data.webhook.alwaysReturn200 ? 'var(--success)' : 'var(--text-muted)'}">
+                                ${data.webhook.alwaysReturn200 ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3 class="config-section-title">&#128274; Security Settings</h3>
+                    <div class="config-group">
+                        <div class="config-item">
+                            <div class="config-item-info">
+                                <h4>IP Allowlist</h4>
+                                <p>Restrict access by IP address${data.security.ipAllowlist.enabled ? ` (${data.security.ipAllowlist.allowedIps.length} IPs, ${data.security.ipAllowlist.allowedCidrs.length} CIDRs)` : ''}</p>
+                            </div>
+                            <span style="font-weight: 600; color: ${data.security.ipAllowlist.enabled ? 'var(--success)' : 'var(--text-muted)'}">
+                                ${data.security.ipAllowlist.enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </div>
+                        <div class="config-item">
+                            <div class="config-item-info">
+                                <h4>API Key Authentication</h4>
+                                <p>Require API key in ${data.security.apiKey.headerName} header${data.security.apiKey.enabled ? ` (${data.security.apiKey.keyCount} keys)` : ''}</p>
+                            </div>
+                            <span style="font-weight: 600; color: ${data.security.apiKey.enabled ? 'var(--success)' : 'var(--text-muted)'}">
+                                ${data.security.apiKey.enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </div>
+                        <div class="config-item">
+                            <div class="config-item-info">
+                                <h4>HMAC Signature Verification</h4>
+                                <p>Verify ${data.security.hmac.algorithm} signatures in ${data.security.hmac.headerName}</p>
+                            </div>
+                            <span style="font-weight: 600; color: ${data.security.hmac.enabled ? 'var(--success)' : 'var(--text-muted)'}">
+                                ${data.security.hmac.enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </div>
+                        <div class="config-item">
+                            <div class="config-item-info">
+                                <h4>Rate Limiting</h4>
+                                <p>${data.security.rateLimit.enabled ? `${data.security.rateLimit.requestsPerMinute}/min, ${data.security.rateLimit.requestsPerHour}/hour` : 'No limits configured'}</p>
+                            </div>
+                            <span style="font-weight: 600; color: ${data.security.rateLimit.enabled ? 'var(--success)' : 'var(--text-muted)'}">
+                                ${data.security.rateLimit.enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3 class="config-section-title">&#128221; Logging Settings</h3>
+                    <div class="config-group">
+                        <div class="config-item">
+                            <div class="config-item-info">
+                                <h4>File Logging</h4>
+                                <p>Write logs to ${data.logging.logDirectory}</p>
+                            </div>
+                            <span style="font-weight: 600; color: ${data.logging.enabled ? 'var(--success)' : 'var(--text-muted)'}">
+                                ${data.logging.enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </div>
+                        <div class="config-item">
+                            <div class="config-item-info">
+                                <h4>Max Log File Size</h4>
+                                <p>Rotate logs after reaching this size</p>
+                            </div>
+                            <span style="font-weight: 600; color: var(--accent)">${data.logging.maxFileSizeMB} MB</span>
+                        </div>
+                    </div>
+                </div>
+
+                <p style="margin-top: 2rem; color: var(--text-muted); font-size: 0.9rem;">
+                    &#128161; To modify these settings, edit <code style="background: var(--bg-secondary); padding: 0.25rem 0.5rem; border-radius: 4px;">appsettings.json</code> and restart the service.
+                </p>
+            `;
+        }
+
+        function updateEndpoint(data) {
+            document.getElementById('webhookUrl').textContent = data.webhookUrl;
+            document.getElementById('curlExample').textContent = data.exampleCurl;
+        }
+
+        async function viewWebhook(id) {
+            document.getElementById('webhookModal').classList.add('active');
+            document.getElementById('webhookModalContent').innerHTML = `
+                <div class="empty-state">
+                    <div class="spinner"></div>
+                    <p>Loading webhook details...</p>
+                </div>
+            `;
+
+            const data = await fetchAPI(`webhooks/${id}`);
+            if (!data) {
+                document.getElementById('webhookModalContent').innerHTML = `
+                    <div class="empty-state">
+                        <p>Failed to load webhook details</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const headersHtml = Object.entries(data.headers).map(([key, values]) => `
+                <div class="header-row">
+                    <span class="key">${key}</span>
+                    <span class="value">${Array.isArray(values) ? values.join(', ') : values}</span>
+                </div>
+            `).join('');
+
+            document.getElementById('webhookModalContent').innerHTML = `
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <label>Request ID</label>
+                        <span style="font-family: monospace; font-size: 0.9rem;">${data.id}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Received</label>
+                        <span>${new Date(data.receivedAtUtc).toLocaleString()}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Method</label>
+                        <span style="color: var(--accent)">${data.httpMethod}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Path</label>
+                        <span>${data.path}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Source IP</label>
+                        <span>${data.sourceIpAddress}:${data.sourcePort}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Content Size</label>
+                        <span>${data.contentLengthFormatted}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Content Type</label>
+                        <span>${data.contentType || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <label>Valid JSON</label>
+                        <span style="color: ${data.isValidJson ? 'var(--success)' : 'var(--danger)'}">
+                            ${data.isValidJson ? '✓ Yes' : '✗ No'}
+                        </span>
+                    </div>
+                </div>
+
+                <h4 style="margin-bottom: 0.75rem; font-weight: 600;">Headers (${Object.keys(data.headers).length})</h4>
+                <div class="headers-list" style="margin-bottom: 1.5rem;">
+                    ${headersHtml}
+                </div>
+
+                <h4 style="margin-bottom: 0.75rem; font-weight: 600;">Body</h4>
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>${data.isValidJson ? 'JSON' : 'Raw'}</span>
+                        <button class="copy-btn" onclick="copyToClipboard(\`${encodeURIComponent(data.rawBody)}\`, 'Body')">Copy</button>
+                    </div>
+                    <pre class="code-content"><code class="${data.isValidJson ? 'language-json' : ''}">${escapeHtml(data.formattedBody || data.rawBody)}</code></pre>
+                </div>
+            `;
+
+            // Highlight code
+            document.querySelectorAll('#webhookModalContent pre code').forEach(block => {
+                hljs.highlightElement(block);
+            });
+        }
+
+        function closeModal() {
+            document.getElementById('webhookModal').classList.remove('active');
+        }
+
+        async function sendTestWebhook() {
+            showToast('Sending test webhook...', 'info');
+            const result = await fetch('/api/dashboard/test-webhook', { method: 'POST' });
+            if (result.ok) {
+                showToast('Test webhook sent successfully!', 'success');
+                setTimeout(loadAllData, 500);
+            } else {
+                showToast('Failed to send test webhook', 'error');
+            }
+        }
+
+        async function refreshWebhooks() {
+            const data = await fetchAPI('webhooks?limit=50');
+            if (data) updateWebhooks(data.webhooks);
+            const statsData = await fetchAPI('stats');
+            if (statsData) updateStats(statsData);
+        }
+
+        let searchTimeout;
+        async function searchWebhooks(query) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                const data = await fetchAPI(`webhooks?limit=100&search=${encodeURIComponent(query)}`);
+                if (data) renderWebhooks('allWebhooks', data.webhooks);
+            }, 300);
+        }
+
+        function startAutoRefresh() {
+            refreshInterval = setInterval(loadAllData, 30000);
+        }
+
+        function copyEndpoint() {
+            const url = document.getElementById('webhookUrl').textContent;
+            copyToClipboard(url, 'Endpoint URL');
+        }
+
+        function copyCurl() {
+            const curl = document.getElementById('curlExample').textContent;
+            copyToClipboard(curl, 'cURL command');
+        }
+
+        function copyToClipboard(text, label) {
+            text = decodeURIComponent(text);
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`${label} copied to clipboard!`, 'success');
+            }).catch(() => {
+                showToast('Failed to copy', 'error');
+            });
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <span>${type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ'}</span>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Close modal on escape
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Close modal on overlay click
+        document.getElementById('webhookModal').addEventListener('click', e => {
+            if (e.target.classList.contains('modal-overlay')) closeModal();
+        });
+    </script>
+</body>
+</html>
