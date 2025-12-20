@@ -45,16 +45,26 @@ builder.WebHost.ConfigureKestrel(options =>
 
 var app = builder.Build();
 
-// Middleware pipeline
-app.UseMiddleware<RequestBufferingMiddleware>();
-app.UseMiddleware<IpAllowlistMiddleware>();
-app.UseMiddleware<ApiKeyAuthenticationMiddleware>();
-app.UseMiddleware<HmacSignatureMiddleware>();
-app.UseMiddleware<RateLimitingMiddleware>();
+// Serve static files (UI)
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+// Middleware pipeline - only apply security middleware to webhook endpoint
+app.UseWhen(context => context.Request.Path.StartsWithSegments("/webhook"), appBuilder =>
+{
+    appBuilder.UseMiddleware<RequestBufferingMiddleware>();
+    appBuilder.UseMiddleware<IpAllowlistMiddleware>();
+    appBuilder.UseMiddleware<ApiKeyAuthenticationMiddleware>();
+    appBuilder.UseMiddleware<HmacSignatureMiddleware>();
+    appBuilder.UseMiddleware<RateLimitingMiddleware>();
+});
 
 app.UseRouting();
 
 app.MapControllers();
+
+// Fallback to index.html for SPA routing
+app.MapFallbackToFile("index.html");
 
 // Health check with detailed response
 app.MapHealthChecks("/health", new HealthCheckOptions
@@ -86,20 +96,36 @@ var logger = app.Services.GetRequiredService<ILogger<Program>>();
 Program.StartTime = DateTime.UtcNow;
 
 Console.WriteLine();
-Console.WriteLine("  VOLWebHook Service");
-Console.WriteLine("  ──────────────────────────────────────");
-Console.WriteLine($"  Environment:  {app.Environment.EnvironmentName}");
-Console.WriteLine($"  Endpoint:     POST /webhook");
-Console.WriteLine($"  Health:       GET /health");
-Console.WriteLine($"  Storage:      {webhookSettings.PayloadStoragePath}");
-Console.WriteLine($"  Max payload:  {webhookSettings.MaxPayloadSizeBytes / 1024 / 1024} MB");
+Console.WriteLine("  ╔═══════════════════════════════════════════════════════════╗");
+Console.WriteLine("  ║                                                           ║");
+Console.WriteLine("  ║   ██╗   ██╗ ██████╗ ██╗    ██╗    ██╗███████╗██████╗      ║");
+Console.WriteLine("  ║   ██║   ██║██╔═══██╗██║    ██║    ██║██╔════╝██╔══██╗     ║");
+Console.WriteLine("  ║   ██║   ██║██║   ██║██║    ██║ █╗ ██║█████╗  ██████╔╝     ║");
+Console.WriteLine("  ║   ╚██╗ ██╔╝██║   ██║██║    ██║███╗██║██╔══╝  ██╔══██╗     ║");
+Console.WriteLine("  ║    ╚████╔╝ ╚██████╔╝███████╗╚███╔███╔╝███████╗██████╔╝     ║");
+Console.WriteLine("  ║     ╚═══╝   ╚═════╝ ╚══════╝ ╚══╝╚══╝ ╚══════╝╚═════╝      ║");
+Console.WriteLine("  ║                                                           ║");
+Console.WriteLine("  ║           Enterprise Webhook Management System            ║");
+Console.WriteLine("  ║                                                           ║");
+Console.WriteLine("  ╚═══════════════════════════════════════════════════════════╝");
 Console.WriteLine();
-Console.WriteLine("  Security:");
-Console.WriteLine($"    IP Allowlist: {(securitySettings.IpAllowlist.Enabled ? "ON" : "off")}");
-Console.WriteLine($"    API Key:      {(securitySettings.ApiKey.Enabled ? "ON" : "off")}");
-Console.WriteLine($"    HMAC:         {(securitySettings.Hmac.Enabled ? "ON" : "off")}");
-Console.WriteLine($"    Rate Limit:   {(securitySettings.RateLimit.Enabled ? "ON" : "off")}");
-Console.WriteLine("  ──────────────────────────────────────");
+Console.WriteLine($"  Environment:  {app.Environment.EnvironmentName}");
+Console.WriteLine($"  Dashboard:    http://localhost:5000  (UI)");
+Console.WriteLine($"  Webhook:      POST /webhook");
+Console.WriteLine($"  Health:       GET /health");
+Console.WriteLine($"  API:          GET /api/ui/*");
+Console.WriteLine();
+Console.WriteLine($"  Storage:      {webhookSettings.PayloadStoragePath}");
+Console.WriteLine($"  Max Payload:  {webhookSettings.MaxPayloadSizeBytes / 1024 / 1024} MB");
+Console.WriteLine($"  Retention:    {webhookSettings.PayloadRetentionDays} days");
+Console.WriteLine();
+Console.WriteLine("  Security Features:");
+Console.WriteLine($"    ├─ IP Allowlist: {(securitySettings.IpAllowlist.Enabled ? "✓ ENABLED" : "○ disabled")}");
+Console.WriteLine($"    ├─ API Key:      {(securitySettings.ApiKey.Enabled ? "✓ ENABLED" : "○ disabled")}");
+Console.WriteLine($"    ├─ HMAC:         {(securitySettings.Hmac.Enabled ? "✓ ENABLED" : "○ disabled")}");
+Console.WriteLine($"    └─ Rate Limit:   {(securitySettings.RateLimit.Enabled ? "✓ ENABLED" : "○ disabled")}");
+Console.WriteLine();
+Console.WriteLine("  ─────────────────────────────────────────────────────────────");
 Console.WriteLine();
 
 logger.LogInformation("VOLWebHook started successfully");

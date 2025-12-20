@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VOLWebHook - Enterprise-grade webhook capture and management service">
+    <title>VOLWebHook - Enterprise Webhook Management</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/css/app.css">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%236366f1' rx='20' width='100' height='100'/><text x='50' y='68' font-size='50' text-anchor='middle' fill='white' font-family='system-ui'>W</text></svg>">
+
+    <style>
+        /* Additional page-specific styles */
+        .webhook-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            margin-bottom: var(--space-3);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .webhook-item:hover {
+            border-color: var(--color-primary);
+            box-shadow: var(--shadow-md);
+            transform: translateX(4px);
+        }
+
+        .webhook-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-2);
+        }
+
+        .webhook-item-id {
+            display: flex;
+            align-items: center;
+            gap: var(--space-2);
+        }
+
+        .webhook-item-time {
+            font-size: var(--font-size-sm);
+            color: var(--text-muted);
+        }
+
+        .webhook-item-meta {
+            display: flex;
+            align-items: center;
+            gap: var(--space-4);
+            font-size: var(--font-size-sm);
+            color: var(--text-tertiary);
+        }
+
+        .webhook-item-ip,
+        .webhook-item-size {
+            display: flex;
+            align-items: center;
+            gap: var(--space-1);
+        }
+
+        .webhook-detail-section {
+            margin-bottom: var(--space-6);
+        }
+
+        .webhook-detail-section h4 {
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-semibold);
+            margin-bottom: var(--space-3);
+            color: var(--text-primary);
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-4);
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-1);
+        }
+
+        .detail-label {
+            font-size: var(--font-size-xs);
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: var(--letter-spacing-wide);
+        }
+
+        .detail-value {
+            font-size: var(--font-size-sm);
+            color: var(--text-primary);
+        }
+
+        .headers-list {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: var(--space-4);
+            font-family: var(--font-family-mono);
+            font-size: var(--font-size-sm);
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .header-row {
+            padding: var(--space-1) 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .header-row:last-child {
+            border-bottom: none;
+        }
+
+        .header-key {
+            color: var(--color-primary);
+        }
+
+        .header-value {
+            color: var(--text-secondary);
+        }
+
+        .config-section {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            margin-bottom: var(--space-6);
+        }
+
+        .config-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-5);
+            padding-bottom: var(--space-4);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .config-section-title {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .config-section-title h3 {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+        }
+
+        .config-section-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--color-primary-50);
+            color: var(--color-primary);
+        }
+
+        [data-theme="dark"] .config-section-icon {
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-5);
+        }
+
+        .log-entry {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3);
+            border-bottom: 1px solid var(--border-light);
+            font-size: var(--font-size-sm);
+        }
+
+        .log-time {
+            color: var(--text-muted);
+            font-family: var(--font-family-mono);
+            font-size: var(--font-size-xs);
+            min-width: 80px;
+        }
+
+        .log-level {
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .log-message {
+            flex: 1;
+            font-family: var(--font-family-mono);
+            color: var(--text-secondary);
+        }
+
+        /* Hero section for landing */
+        .hero {
+            text-align: center;
+            padding: var(--space-16) var(--space-6);
+            background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--bg-secondary) 100%);
+            border-radius: var(--radius-2xl);
+            margin-bottom: var(--space-8);
+        }
+
+        [data-theme="dark"] .hero {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, var(--bg-secondary) 100%);
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            background: var(--color-primary);
+            color: white;
+            padding: var(--space-2) var(--space-4);
+            border-radius: var(--radius-full);
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            margin-bottom: var(--space-6);
+        }
+
+        .hero h1 {
+            font-size: var(--font-size-5xl);
+            font-weight: var(--font-weight-extrabold);
+            margin-bottom: var(--space-4);
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: var(--font-size-xl);
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto var(--space-8);
+        }
+
+        .hero-actions {
+            display: flex;
+            justify-content: center;
+            gap: var(--space-4);
+            flex-wrap: wrap;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-6);
+            margin-bottom: var(--space-8);
+        }
+
+        .feature-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            padding: var(--space-6);
+            transition: all var(--transition-base);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--color-primary);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--space-4);
+            background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+            color: white;
+        }
+
+        .feature-card h3 {
+            font-size: var(--font-size-lg);
+            margin-bottom: var(--space-2);
+        }
+
+        .feature-card p {
+            font-size: var(--font-size-sm);
+            color: var(--text-tertiary);
+            margin-bottom: 0;
+        }
+
+        /* Quick start section */
+        .quick-start {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            padding: var(--space-8);
+            margin-bottom: var(--space-8);
+        }
+
+        .quick-start h2 {
+            margin-bottom: var(--space-6);
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+        }
+
+        .step {
+            display: flex;
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+
+        .step:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: var(--font-weight-bold);
+            flex-shrink: 0;
+        }
+
+        .step-content h4 {
+            font-size: var(--font-size-base);
+            margin-bottom: var(--space-2);
+        }
+
+        .step-content p {
+            font-size: var(--font-size-sm);
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-3);
+        }
+
+        /* Help page styles */
+        .help-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-5);
+            margin-bottom: var(--space-8);
+        }
+
+        .help-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            padding: var(--space-5);
+            transition: all var(--transition-base);
+        }
+
+        .help-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .help-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--space-3);
+            background: var(--color-primary-50);
+            color: var(--color-primary);
+        }
+
+        [data-theme="dark"] .help-card-icon {
+            background: rgba(99, 102, 241, 0.15);
+        }
+
+        .help-card h3 {
+            font-size: var(--font-size-base);
+            margin-bottom: var(--space-2);
+        }
+
+        .help-card p {
+            font-size: var(--font-size-sm);
+            color: var(--text-tertiary);
+            margin-bottom: 0;
+        }
+
+        .api-reference {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+        }
+
+        .api-endpoint {
+            padding: var(--space-5);
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .api-endpoint:last-child {
+            border-bottom: none;
+        }
+
+        .api-endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            margin-bottom: var(--space-3);
+        }
+
+        .api-method {
+            padding: var(--space-1) var(--space-3);
+            border-radius: var(--radius-md);
+            font-size: var(--font-size-xs);
+            font-weight: var(--font-weight-bold);
+            font-family: var(--font-family-mono);
+        }
+
+        .api-method.post {
+            background: var(--color-success-bg);
+            color: var(--color-success);
+        }
+
+        .api-method.get {
+            background: var(--color-info-bg);
+            color: var(--color-info);
+        }
+
+        .api-path {
+            font-family: var(--font-family-mono);
+            font-weight: var(--font-weight-medium);
+        }
+
+        .api-description {
+            font-size: var(--font-size-sm);
+            color: var(--text-tertiary);
+        }
+
+        /* Overlay for mobile sidebar */
+        #sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: var(--bg-overlay);
+            z-index: calc(var(--z-sticky) - 1);
+        }
+
+        #sidebar-overlay.active {
+            display: block;
+        }
+
+        @media (max-width: 1024px) {
+            .hero h1 {
+                font-size: var(--font-size-3xl);
+            }
+
+            .hero p {
+                font-size: var(--font-size-base);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Overlay (Mobile) -->
+    <div id="sidebar-overlay"></div>
+
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">
+                    <div class="sidebar-logo">W</div>
+                    <span class="sidebar-title">VOLWebHook</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <div class="nav-section-title">Main</div>
+                    <a href="#" class="nav-item active" data-page="dashboard">
+                        <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="#" class="nav-item" data-page="webhooks">
+                        <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        <span>Webhooks</span>
+                        <span class="nav-item-badge" id="webhook-count">0</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Settings</div>
+                    <a href="#" class="nav-item" data-page="configuration">
+                        <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        <span>Configuration</span>
+                    </a>
+                    <a href="#" class="nav-item" data-page="logs">
+                        <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <span>Logs</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Support</div>
+                    <a href="#" class="nav-item" data-page="help">
+                        <svg class="nav-item-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>Help & Docs</span>
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="status status-online" id="health-badge">
+                    <span class="status-dot"></span>
+                    <span>Healthy</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="mobile-menu-toggle btn btn-ghost btn-icon" id="mobile-menu-toggle">
+                        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                    <h1 class="page-title" id="page-title">Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <label class="form-switch" data-tooltip="Auto-refresh every 30s">
+                        <input type="checkbox" id="auto-refresh-toggle" checked>
+                        <span class="form-switch-slider"></span>
+                        <span class="form-switch-label">Auto-refresh</span>
+                    </label>
+                    <button class="btn btn-ghost btn-icon" id="refresh-btn" data-tooltip="Refresh data">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>
+                    <button class="btn btn-ghost btn-icon" id="theme-toggle" data-tooltip="Toggle theme">
+                        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard Page -->
+            <div class="page-content page" id="page-dashboard">
+                <!-- Hero Section -->
+                <div class="hero">
+                    <span class="hero-badge">
+                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        Enterprise Webhook Management
+                    </span>
+                    <h1>Welcome to VOLWebHook</h1>
+                    <p>A production-ready webhook capture service that securely receives, validates, and stores webhook events from any external vendor. Enterprise-grade security with zero configuration required.</p>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary btn-xl" onclick="App.navigateTo('webhooks')">
+                            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            View Webhooks
+                        </button>
+                        <button class="btn btn-secondary btn-xl" onclick="App.navigateTo('help')">
+                            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                            </svg>
+                            Read Documentation
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card" style="--stat-color: var(--color-primary); --stat-bg: var(--color-primary-50);">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Total Webhooks</div>
+                            <div class="stat-value" id="stat-total">0</div>
+                            <span class="stat-change positive">All time</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" style="--stat-color: var(--color-success); --stat-bg: var(--color-success-bg);">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Today's Webhooks</div>
+                            <div class="stat-value" id="stat-today">0</div>
+                            <span class="stat-change positive">Last 24h</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" style="--stat-color: var(--color-accent); --stat-bg: rgba(20, 184, 166, 0.1);">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Success Rate</div>
+                            <div class="stat-value" id="stat-success-rate">100%</div>
+                            <span class="stat-change positive">Excellent</span>
+                        </div>
+                    </div>
+
+                    <div class="stat-card" style="--stat-color: var(--color-secondary); --stat-bg: rgba(236, 72, 153, 0.1);">
+                        <div class="stat-icon">
+                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7z"/>
+                            </svg>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-label">Avg. Payload Size</div>
+                            <div class="stat-value" id="stat-avg-size">0 B</div>
+                            <span class="stat-change positive">Per request</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features Grid -->
+                <h2 style="margin-bottom: var(--space-5);">Key Features</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                        </div>
+                        <h3>Enterprise Security</h3>
+                        <p>Multiple security layers including IP allowlisting, API key authentication, HMAC signature verification, and rate limiting.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7c0-2-1-3-3-3H7C5 4 4 5 4 7z"/>
+                            </svg>
+                        </div>
+                        <h3>Any JSON Payload</h3>
+                        <p>Accepts any JSON structure from any vendor. Flexible parsing with comprehensive validation and error reporting.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                            </svg>
+                        </div>
+                        <h3>Automatic Storage</h3>
+                        <p>Date-organized file storage with configurable retention. Every webhook is persisted with full headers and metadata.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                        <h3>Detailed Logging</h3>
+                        <p>Rolling file logs with size-based rotation. Request correlation IDs for easy debugging and troubleshooting.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h3>Always Available</h3>
+                        <p>Returns 200 OK even on internal errors to prevent webhook retry storms. Built for 24/7 production reliability.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+                            </svg>
+                        </div>
+                        <h3>Fully Customizable</h3>
+                        <p>Environment-based configuration with complete control over security, storage, and behavior. No code changes needed.</p>
+                    </div>
+                </div>
+
+                <!-- Quick Start -->
+                <div class="quick-start">
+                    <h2>
+                        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--color-primary)">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        Quick Start
+                    </h2>
+
+                    <div class="step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Send a Webhook</h4>
+                            <p>POST any JSON payload to the webhook endpoint:</p>
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span class="code-language">cURL</span>
+                                    <button class="code-copy" onclick="App.copyToClipboard(`curl -X POST ${window.location.origin}/webhook -H 'Content-Type: application/json' -d '{\"event\": \"test\", \"data\": {\"message\": \"Hello World\"}}'`)">Copy</button>
+                                </div>
+                                <div class="code-content">
+                                    <pre><code>curl -X POST <span class="json-string">"<span id="webhook-url"></span>/webhook"</span> \
+  -H <span class="json-string">"Content-Type: application/json"</span> \
+  -d <span class="json-string">'{"event": "test", "data": {"message": "Hello World"}}'</span></code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>View the Response</h4>
+                            <p>You'll receive a confirmation with a unique request ID:</p>
+                            <div class="code-block">
+                                <div class="code-header">
+                                    <span class="code-language">JSON Response</span>
+                                </div>
+                                <div class="code-content">
+                                    <pre><code>{
+  <span class="json-key">"requestId"</span>: <span class="json-string">"a1b2c3d4-e5f6-7890-abcd-ef1234567890"</span>,
+  <span class="json-key">"receivedAtUtc"</span>: <span class="json-string">"2024-01-15T10:30:00.123Z"</span>,
+  <span class="json-key">"status"</span>: <span class="json-string">"received"</span>
+}</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Browse Your Webhooks</h4>
+                            <p>Navigate to the Webhooks page to see all captured requests with full details, headers, and payload data.</p>
+                            <button class="btn btn-primary" onclick="App.navigateTo('webhooks')">
+                                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                                View Webhooks
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Status -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                            System Status
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="stats-grid">
+                            <div class="stat-card" style="--stat-color: var(--color-info); --stat-bg: var(--color-info-bg);">
+                                <div class="stat-content">
+                                    <div class="stat-label">Uptime</div>
+                                    <div class="stat-value" id="uptime-value">--</div>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-content">
+                                    <div class="stat-label">IP Allowlist</div>
+                                    <span class="badge badge-neutral" id="ip-allowlist-status">Disabled</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-content">
+                                    <div class="stat-label">API Key Auth</div>
+                                    <span class="badge badge-neutral" id="api-key-status">Disabled</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-content">
+                                    <div class="stat-label">HMAC Verification</div>
+                                    <span class="badge badge-neutral" id="hmac-status">Disabled</span>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-content">
+                                    <div class="stat-label">Rate Limiting</div>
+                                    <span class="badge badge-neutral" id="rate-limit-status">Disabled</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Webhooks Page -->
+            <div class="page-content page hidden" id="page-webhooks">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            Captured Webhooks
+                        </h3>
+                        <div class="search-box">
+                            <svg class="search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            <input type="text" class="search-input" id="webhook-search" placeholder="Search webhooks... (Ctrl+K)">
+                        </div>
+                    </div>
+                    <div class="card-body" id="webhooks-list">
+                        <div class="empty-state">
+                            <svg class="empty-state-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
+                            </svg>
+                            <h3 class="empty-state-title">No webhooks yet</h3>
+                            <p class="empty-state-description">
+                                Webhooks will appear here when external services send data to your endpoint.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuration Page -->
+            <div class="page-content page hidden" id="page-configuration">
+                <div class="alert alert-info">
+                    <svg class="alert-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <div class="alert-content">
+                        <div class="alert-title">Configuration Overview</div>
+                        <div class="alert-description">These settings control how VOLWebHook processes and stores incoming webhooks. Changes are saved to the active configuration.</div>
+                    </div>
+                </div>
+
+                <!-- Webhook Settings -->
+                <div class="config-section">
+                    <div class="config-section-header">
+                        <div class="config-section-title">
+                            <div class="config-section-icon">
+                                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>Webhook Settings</h3>
+                                <p style="font-size: var(--font-size-sm); color: var(--text-tertiary); margin: 0;">Control how webhooks are processed and stored</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-grid">
+                        <div class="form-group">
+                            <label class="form-label">Max Payload Size (MB)</label>
+                            <input type="number" class="form-input" id="config-max-payload" value="10" min="1" max="100">
+                            <span class="form-hint">Maximum allowed request body size</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Storage Path</label>
+                            <input type="text" class="form-input" id="config-storage-path" value="./data/webhooks">
+                            <span class="form-hint">Directory for webhook storage</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Retention Days</label>
+                            <input type="number" class="form-input" id="config-retention-days" value="30" min="1" max="365">
+                            <span class="form-hint">Days to keep webhook data</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-switch">
+                                <input type="checkbox" id="config-persistence" checked>
+                                <span class="form-switch-slider"></span>
+                                <span class="form-switch-label">Enable Payload Persistence</span>
+                            </label>
+                            <span class="form-hint">Store webhook payloads to disk</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-switch">
+                                <input type="checkbox" id="config-always-200" checked>
+                                <span class="form-switch-slider"></span>
+                                <span class="form-switch-label">Always Return 200</span>
+                            </label>
+                            <span class="form-hint">Return 200 OK even on errors</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Security Settings -->
+                <div class="config-section">
+                    <div class="config-section-header">
+                        <div class="config-section-title">
+                            <div class="config-section-icon" style="background: var(--color-success-bg); color: var(--color-success);">
+                                <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>Security Settings</h3>
+                                <p style="font-size: var(--font-size-sm); color: var(--text-tertiary); margin: 0;">Configure authentication and access control</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="config-grid">
+                        <div class="form-group">
+                            <label class="form-switch">
+                                <input type="checkbox" id="config-ip-enabled" onchange="App.toggleConfigSection('ip-settings', this.checked)">
+                                <span class="form-switch-slider"></span>
+                                <span class="form-switch-label">IP Allowlist</span>
+                            </label>
+                            <span class="form-hint">Only allow requests from specific IPs</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-switch">
+                                <input type="checkbox" id="config-apikey-enabled" onchange="App.toggleConfigSection('apikey-settings', this.checked)">
+                                <span class="form-switch-slider"></span>
+                                <span class="form-switch-label">API Key Authentication</span>
+                            </label>
+                            <span class="form-hint">Require API key in request header</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-switch">
+                                <input type="checkbox" id="config-hmac-enabled" onchange="App.toggleConfigSection('hmac-settings', this.checked)">
+                                <span class="form-switch-slider"></span>
+                                <span class="form-switch-label">HMAC Signature Verification</span>
+                            </label>
+                            <span class="form-hint">Verify webhook signatures</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-switch">
+                                <input type="checkbox" id="config-ratelimit-enabled" onchange="App.toggleConfigSection('ratelimit-settings', this.checked)">
+                                <span class="form-switch-slider"></span>
+                                <span class="form-switch-label">Rate Limiting</span>
+                            </label>
+                            <span class="form-hint">Limit requests per IP address</span>
+                        </div>
+                    </div>
+
+                    <!-- Rate Limit Settings (shown when enabled) -->
+                    <div id="ratelimit-settings" style="display: none; margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px solid var(--border-light);">
+                        <h4 style="margin-bottom: var(--space-4);">Rate Limit Configuration</h4>
+                        <div class="config-grid">
+                            <div class="form-group">
+                                <label class="form-label">Requests per Minute</label>
+                                <input type="number" class="form-input" id="config-rate-per-minute" value="100" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Requests per Hour</label>
+                                <input type="number" class="form-input" id="config-rate-per-hour" value="1000" min="1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="ip-settings" style="display: none;"></div>
+                    <div id="apikey-settings" style="display: none;"></div>
+                    <div id="hmac-settings" style="display: none;"></div>
+                </div>
+
+                <!-- Save Button -->
+                <div style="display: flex; justify-content: flex-end; gap: var(--space-3);">
+                    <button class="btn btn-secondary" onclick="App.loadConfig()">
+                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Reset
+                    </button>
+                    <button class="btn btn-primary" onclick="App.saveConfig()">
+                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Save Configuration
+                    </button>
+                </div>
+            </div>
+
+            <!-- Logs Page -->
+            <div class="page-content page hidden" id="page-logs">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Application Logs
+                        </h3>
+                    </div>
+                    <div class="card-body" id="logs-list">
+                        <div class="empty-state">
+                            <svg class="empty-state-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <h3 class="empty-state-title">No logs available</h3>
+                            <p class="empty-state-description">Log entries will appear here as the service processes requests.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Page -->
+            <div class="page-content page hidden" id="page-help">
+                <div class="hero" style="padding: var(--space-10);">
+                    <h1 style="font-size: var(--font-size-3xl);">Help & Documentation</h1>
+                    <p style="font-size: var(--font-size-base);">Everything you need to know about using VOLWebHook</p>
+                </div>
+
+                <h2 style="margin-bottom: var(--space-5);">What is VOLWebHook?</h2>
+                <div class="card" style="margin-bottom: var(--space-8);">
+                    <div class="card-body">
+                        <p style="font-size: var(--font-size-lg); line-height: var(--line-height-relaxed);">
+                            <strong>VOLWebHook</strong> is a production-ready webhook capture service that acts as a universal endpoint for receiving webhook events from any external vendor or service. Think of it as a secure mailbox for your application's incoming webhook data.
+                        </p>
+                        <p>
+                            When external services (like payment processors, CRM systems, or notification services) need to send real-time updates to your application, they use webhooks. VOLWebHook receives these webhooks, validates them, logs them, and stores them for later processing.
+                        </p>
+                    </div>
+                </div>
+
+                <h2 style="margin-bottom: var(--space-5);">Quick Links</h2>
+                <div class="help-grid">
+                    <div class="help-card">
+                        <div class="help-card-icon">
+                            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                        <h3>Getting Started</h3>
+                        <p>Learn how to send your first webhook and view the captured data.</p>
+                    </div>
+
+                    <div class="help-card">
+                        <div class="help-card-icon">
+                            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                        </div>
+                        <h3>Security Guide</h3>
+                        <p>Configure IP allowlists, API keys, HMAC signatures, and rate limiting.</p>
+                    </div>
+
+                    <div class="help-card">
+                        <div class="help-card-icon">
+                            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </div>
+                        <h3>Configuration</h3>
+                        <p>Customize storage paths, retention policies, and payload limits.</p>
+                    </div>
+
+                    <div class="help-card">
+                        <div class="help-card-icon">
+                            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                            </svg>
+                        </div>
+                        <h3>Storage & Retention</h3>
+                        <p>Understand how webhooks are stored and automatically cleaned up.</p>
+                    </div>
+                </div>
+
+                <h2 style="margin-bottom: var(--space-5);">API Reference</h2>
+                <div class="api-reference">
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method post">POST</span>
+                            <span class="api-path">/webhook</span>
+                        </div>
+                        <p class="api-description">Receives webhook payloads from external services. Accepts any valid JSON body. Returns a confirmation with a unique request ID.</p>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method get">GET</span>
+                            <span class="api-path">/health</span>
+                        </div>
+                        <p class="api-description">Returns the service health status including uptime, environment, and security feature status.</p>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method get">GET</span>
+                            <span class="api-path">/api/ui/webhooks</span>
+                        </div>
+                        <p class="api-description">Returns a list of captured webhooks. Supports ?limit parameter for pagination.</p>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method get">GET</span>
+                            <span class="api-path">/api/ui/webhooks/{id}</span>
+                        </div>
+                        <p class="api-description">Returns full details of a specific webhook including headers and body.</p>
+                    </div>
+
+                    <div class="api-endpoint">
+                        <div class="api-endpoint-header">
+                            <span class="api-method get">GET</span>
+                            <span class="api-path">/api/ui/stats</span>
+                        </div>
+                        <p class="api-description">Returns webhook statistics including total count, today's count, and average payload size.</p>
+                    </div>
+                </div>
+
+                <h2 style="margin: var(--space-8) 0 var(--space-5);">Frequently Asked Questions</h2>
+                <div class="accordion">
+                    <div class="accordion-item open">
+                        <button class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                            <span>How do I configure which IPs can send webhooks?</span>
+                            <svg class="accordion-icon" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div class="accordion-body">
+                            <p>Go to the Configuration page and enable "IP Allowlist" under Security Settings. You can then add individual IP addresses or CIDR ranges (like 10.0.0.0/8) to the allowlist. Only requests from these IPs will be accepted.</p>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <button class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                            <span>What happens when a webhook fails validation?</span>
+                            <svg class="accordion-icon" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div class="accordion-body">
+                            <p>By default, VOLWebHook is configured to always return HTTP 200 OK, even if there's an internal error or validation failure. This prevents external services from retrying webhooks unnecessarily. The actual error is logged for debugging.</p>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <button class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                            <span>How long are webhooks stored?</span>
+                            <svg class="accordion-icon" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div class="accordion-body">
+                            <p>The default retention period is 30 days. You can configure this in the Configuration page under "Retention Days". Webhooks older than this period are automatically cleaned up.</p>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <button class="accordion-header" onclick="this.parentElement.classList.toggle('open')">
+                            <span>Can I integrate with a database instead of file storage?</span>
+                            <svg class="accordion-icon" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div class="accordion-body">
+                            <p>Yes! VOLWebHook is designed with a pluggable storage interface. You can implement the IWebhookPersistenceService interface with SQL Server, PostgreSQL, MongoDB, or any other database. See the README for example implementations.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Webhook Detail Modal -->
+    <div class="modal-backdrop" id="webhook-modal">
+        <div class="modal" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Webhook Details</h3>
+                <button class="modal-close">
+                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Content loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/js/app.js"></script>
+    <script>
+        // Set the webhook URL in the quick start section
+        document.getElementById('webhook-url').textContent = window.location.origin;
+    </script>
+</body>
+</html>
