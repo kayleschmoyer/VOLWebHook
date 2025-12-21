@@ -572,8 +572,7 @@
         }
 
         .tooltip-trigger .tooltip-content {
-            visibility: hidden;
-            opacity: 0;
+            display: none;
             position: absolute;
             left: 50%;
             bottom: calc(100% + 10px);
@@ -583,16 +582,14 @@
             border-radius: 12px;
             padding: 1rem;
             width: 320px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             z-index: 100;
-            transition: opacity 0.2s, visibility 0.2s;
             text-align: left;
             font-weight: 400;
         }
 
         .tooltip-trigger:hover .tooltip-content {
-            visibility: visible;
-            opacity: 1;
+            display: block;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         }
 
         .tooltip-trigger .tooltip-content::after {
