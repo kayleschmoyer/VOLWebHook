@@ -1015,16 +1015,16 @@
         </header>
 
         <nav class="nav-tabs">
-            <button class="nav-tab active" onclick="showTab('dashboard')">
+            <button class="nav-tab active" onclick="showTab('dashboard', event)">
                 <span>&#128200;</span> Dashboard
             </button>
-            <button class="nav-tab" onclick="showTab('webhooks')">
+            <button class="nav-tab" onclick="showTab('webhooks', event)">
                 <span>&#128229;</span> Webhooks
             </button>
-            <button class="nav-tab" onclick="showTab('config')">
+            <button class="nav-tab" onclick="showTab('config', event)">
                 <span>&#9881;</span> Configuration
             </button>
-            <button class="nav-tab" onclick="showTab('help')">
+            <button class="nav-tab" onclick="showTab('help', event)">
                 <span>&#10067;</span> Help
             </button>
         </nav>
@@ -1234,11 +1234,13 @@
         }
 
         // Tabs
-        function showTab(tabId) {
+        function showTab(tabId, event) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            event.target.closest('.nav-tab').classList.add('active');
+            if (event) {
+                event.target.closest('.nav-tab').classList.add('active');
+            }
         }
 
         // API Calls
@@ -1352,16 +1354,16 @@
 
         // Tooltip helper function
         function tooltip(title, desc, example) {
-            return \`<span class="tooltip-trigger">?
+            return `<span class="tooltip-trigger">?
                 <div class="tooltip-content">
-                    <div class="tooltip-title"><span>&#128161;</span> \${title}</div>
-                    <div class="tooltip-desc">\${desc}</div>
+                    <div class="tooltip-title"><span>&#128161;</span> ${title}</div>
+                    <div class="tooltip-desc">${desc}</div>
                     <div class="tooltip-example">
                         <div class="tooltip-example-label">Real Example</div>
-                        <div class="tooltip-example-text">\${example}</div>
+                        <div class="tooltip-example-text">${example}</div>
                     </div>
                 </div>
-            </span>\`;
+            </span>`;
         }
 
         function updateConfig(data) {
