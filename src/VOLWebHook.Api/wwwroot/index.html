@@ -1707,6 +1707,26 @@
                             </div>
                             <div class="config-item">
                                 <div class="config-item-info">
+                                    <h4>Log Directory ${tooltip(
+                                        'Where Logs Are Stored',
+                                        'The directory on disk where log files are written. This is configured in appsettings.json and shows where to find your logs.',
+                                        'If this shows "/var/log/volwebhook", you\'ll find files like app.log, app.log.1, etc. in that directory. Use this path to check logs when troubleshooting.'
+                                    )}</h4>
+                                    <p class="config-hint" style="font-family: 'Fira Code', monospace; color: var(--text-primary); margin-top: 0.25rem;">${data.logging.logDirectory || 'Not configured'}</p>
+                                </div>
+                            </div>
+                            <div class="config-item">
+                                <div class="config-item-info">
+                                    <h4>File Name Pattern ${tooltip(
+                                        'Log File Naming',
+                                        'The pattern used to name log files. When logs rotate (reach max size), new files follow this pattern with numbers added.',
+                                        'Pattern "app.log" creates: app.log (current), app.log.1 (previous), app.log.2 (older), etc. The pattern can include dates like "app-{Date}.log" for daily logs.'
+                                    )}</h4>
+                                    <p class="config-hint" style="font-family: 'Fira Code', monospace; color: var(--text-primary); margin-top: 0.25rem;">${data.logging.fileNamePattern || 'Not configured'}</p>
+                                </div>
+                            </div>
+                            <div class="config-item">
+                                <div class="config-item-info">
                                     <h4>Max Log File Size (MB) ${tooltip(
                                         'Log File Size Limit',
                                         'When the log file reaches this size, it\'s saved and a new one starts. Prevents logs from filling up your entire hard drive.',
@@ -1777,7 +1797,7 @@
             const saveStatus = document.getElementById('saveStatus');
 
             // Parse textarea values into arrays
-            const parseLines = (text) => text.split('\\n').map(l => l.trim()).filter(l => l);
+            const parseLines = (text) => text.split('\n').map(l => l.trim()).filter(l => l);
 
             const configUpdate = {
                 webhook: {
