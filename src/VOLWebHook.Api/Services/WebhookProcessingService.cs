@@ -31,7 +31,7 @@ public sealed class WebhookProcessingService : IWebhookProcessingService
         var headers = new Dictionary<string, string[]>();
         foreach (var header in request.Headers)
         {
-            headers[header.Key] = header.Value.ToArray();
+            headers[header.Key] = header.Value.Where(v => v != null).ToArray()!;
         }
 
         var webhookRequest = new WebhookRequest
