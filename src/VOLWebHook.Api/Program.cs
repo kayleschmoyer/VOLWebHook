@@ -211,7 +211,7 @@ if (forwardedHeadersConfig.Enabled)
                 IPAddress.TryParse(parts[0], out var ip) &&
                 int.TryParse(parts[1], out var prefixLength))
             {
-                options.KnownNetworks.Add(new IPNetwork(ip, prefixLength));
+                options.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(ip, prefixLength));
             }
         }
     });
