@@ -23,7 +23,13 @@ public sealed class WebhookRequest
 
     public string ToLogString()
     {
-        return $"[{Id}] {ReceivedAtUtc:yyyy-MM-dd HH:mm:ss.fff} UTC | {HttpMethod} {Path} | Source: {SourceIpAddress}:{SourcePort} | Size: {ContentLength} bytes | Valid JSON: {IsValidJson}";
+        var payloadPreview = string.IsNullOrEmpty(RawBody)
+            ? "(empty)"
+            : RawBody.Length > 500
+                ? RawBody.Substring(0, 500) + "..."
+                : RawBody;
+
+        return $"[{Id}] {ReceivedAtUtc:yyyy-MM-dd HH:mm:ss.fff} UTC | {HttpMethod} {Path} | Source: {SourceIpAddress}:{SourcePort} | Size: {ContentLength} bytes | Valid JSON: {IsValidJson} | Payload: {payloadPreview}";
     }
 }
 
