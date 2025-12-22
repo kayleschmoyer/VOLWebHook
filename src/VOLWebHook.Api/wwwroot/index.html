@@ -1368,7 +1368,7 @@
 
         function updateConfig(data) {
             config = data;
-            document.getElementById('configContent').innerHTML = \`
+            document.getElementById('configContent').innerHTML = `
                 <form id="configForm" onsubmit="saveConfiguration(event)">
                     <div class="config-section">
                         <h3 class="config-section-title">&#128229; Webhook Settings</h3>
@@ -1722,7 +1722,7 @@
                         </button>
                     </div>
                 </form>
-            \`;
+            `;
             // Setup auto-save after the form is rendered
             setupAutoSave();
         }
